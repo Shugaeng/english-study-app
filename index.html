@@ -519,7 +519,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.2.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.3.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -857,6 +857,7 @@
             const justMastered = w.box >= MASTER_LEVEL;
             if(justMastered) recordMastery(); // 방금 마스터한 경우에만 목표 진행률 반영
             saveWords(words);
+            if(justMastered) removeFromUnmemorizedBookIfMastered(w);
             updateStreak();
             renderDashboard();
             populateWordBookSelectors();
@@ -911,6 +912,19 @@
             saveWordBooks();
             if(activeWordBookId === UNMEMORIZED_BOOK_ID) words = book.words;
             populateWordBookSelectors();
+        }
+
+        // 미암기 단어장에서 직접(암기 탭/퀴즈 탭) 단어를 완전히 암기(Lv.3 도달)하면
+        // 그 단어장 목록에서는 삭제함 — 미암기 단어장은 '아직 못 외운 단어'만 모아두는 전용 목록이므로
+        function removeFromUnmemorizedBookIfMastered(w) {
+            if(activeWordBookId !== UNMEMORIZED_BOOK_ID) return;
+            if((w.box || 1) < MASTER_LEVEL) return;
+            const book = getActiveWordBook();
+            const idx = book.words.findIndex(item => item.id === w.id);
+            if(idx === -1) return;
+            book.words.splice(idx, 1);
+            saveWordBooks();
+            words = book.words;
         }
 
         // 정답 표시는 세션이 아니라 stats(누적 기록)를 그대로 보여줌 — 설정 탭에서 초기화하기 전까지는
@@ -1054,8 +1068,10 @@
                 // 정답을 맞히면 레벨 승급 (이게 없으면 단어가 영원히 '미암기'로 남아 퀴즈에 무한 반복 출제됨)
                 const wasMastered = (quizCurrent.box || 1) >= MASTER_LEVEL;
                 quizCurrent.box = Math.min(MASTER_LEVEL, (quizCurrent.box || 1) + 1);
-                if(!wasMastered && quizCurrent.box >= MASTER_LEVEL) recordMastery();
+                const justMastered = !wasMastered && quizCurrent.box >= MASTER_LEVEL;
+                if(justMastered) recordMastery();
                 saveWords(words);
+                if(justMastered) removeFromUnmemorizedBookIfMastered(quizCurrent);
             } else {
                 btn.classList.add("selected-wrong");
                 // 오답도 미암기 처리하여 암기카드에서 복습 가능하게 함
@@ -1066,6 +1082,7 @@
             saveStats(stats);
             updateStreak();
             updateQuizScoreDisplay();
+            populateWordBookSelectors();
             renderDashboard();
 
             if(isCorrect) {
