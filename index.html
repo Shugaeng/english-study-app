@@ -486,7 +486,6 @@
         const STORAGE_KEY_DASH_WORDBOOK = "english_study_dash_wordbook_v4";
         const STORAGE_KEY_READINGBOOKS = "english_study_readingbooks_v4";
         const STORAGE_KEY_ACTIVE_READINGBOOK = "english_study_active_readingbook_v4";
-        const STORAGE_KEY_SPLIT_BATCH = "english_study_split_batch_v4";
 
         // ==================================================================
         // Firebase (클라우드 저장) — 아래 firebaseConfig 값을 본인 프로젝트 것으로 채워넣으면
@@ -1667,23 +1666,19 @@
         });
 
         // ==================================================================
-        // 단어장 쪼개기 가져오기 — 한 파일을 N개 단위로 잘라 여러 단어장(1-1, 1-2, ...)으로 생성
+        // 단어장 쪼개기 가져오기 — 한 파일을 N개 단위로 잘라 여러 단어장(파일명Day1, 파일명Day2, ...)으로 생성
         // ==================================================================
-        function nextSplitBatchNumber() {
-            let n = parseInt(localStorage.getItem(STORAGE_KEY_SPLIT_BATCH) || "0", 10) || 0;
-            n += 1;
-            localStorage.setItem(STORAGE_KEY_SPLIT_BATCH, String(n));
-            return n;
+        function getBaseFileName(filename) {
+            return filename.replace(/\.[^/.]+$/, ''); // 확장자 제거
         }
 
-        function splitWordsIntoBooks(parsedWords, chunkSize) {
-            const batch = nextSplitBatchNumber();
+        function splitWordsIntoBooks(parsedWords, chunkSize, baseName) {
             const newBooks = [];
             for(let i = 0; i < parsedWords.length; i += chunkSize) {
                 const chunk = parsedWords.slice(i, i + chunkSize);
                 newBooks.push({
                     id: uid(),
-                    name: `${batch}-${newBooks.length + 1}`,
+                    name: `${baseName}Day${newBooks.length + 1}`,
                     words: chunk.map(p => ({ id: uid(), word: p.word, meaning: p.meaning, box: 1 }))
                 });
             }
@@ -1716,7 +1711,7 @@
                     const ok = await showConfirm(`${parsed.length}개 단어를 ${chunkSize}개씩 나누면 단어장 ${chunkCount}개가 생성됩니다.\n계속할까요?`);
                     if(!ok) return;
 
-                    const newBooks = splitWordsIntoBooks(parsed, chunkSize);
+                    const newBooks = splitWordsIntoBooks(parsed, chunkSize, getBaseFileName(file.name));
                     populateWordBookSelectors();
                     renderWordList();
                     renderDashboard();
