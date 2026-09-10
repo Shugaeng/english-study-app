@@ -483,6 +483,7 @@
         const STORAGE_KEY_GOALS = "english_study_goals_v3";
         const STORAGE_KEY_BQ = "english_study_bq_v3";
         const STORAGE_KEY_PROGRESS = "english_study_progress_v3";
+        const STORAGE_KEY_MASTERED_WORDS = "english_study_mastered_words_v4"; // 목표 진행률에 이미 반영된 단어(중복 카운팅 방지용)
 
         const STORAGE_KEY_WORDBOOKS = "english_study_wordbooks_v4";
         const STORAGE_KEY_ACTIVE_WORDBOOK = "english_study_active_wordbook_v4";
@@ -519,7 +520,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.4.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.4.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -641,12 +642,16 @@
         let userGoals = JSON.parse(localStorage.getItem(STORAGE_KEY_GOALS)) || { daily: 10, weekly: 50, monthly: 200 };
         let bqStats = JSON.parse(localStorage.getItem(STORAGE_KEY_BQ)) || { correct: 0, total: 0 };
         let progress = JSON.parse(localStorage.getItem(STORAGE_KEY_PROGRESS)) || { dailyDate: null, dailyCount: 0, weeklyStart: null, weeklyCount: 0, monthlyMonth: null, monthlyCount: 0 };
+        // 목표 진행률에 이미 반영된 단어(소문자 텍스트 기준) 집합 — 같은 단어가 여러 번 마스터/재마스터되어도
+        // 목표 진행률에는 딱 한 번만 반영되도록 막아줌 (연속일/목표 진행률 초기화 시 함께 비워짐)
+        let masteredWordSet = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY_MASTERED_WORDS)) || []);
         let isWordListOpen = false; // 단어장 접힘 상태 관리 (기본값: 닫힘)
 
         function saveStats(data) { localStorage.setItem(STORAGE_KEY_STATS, JSON.stringify(data)); }
         function saveGoals(data) { localStorage.setItem(STORAGE_KEY_GOALS, JSON.stringify(data)); }
         function saveBQStats(data) { localStorage.setItem(STORAGE_KEY_BQ, JSON.stringify(data)); }
         function saveProgress(data) { localStorage.setItem(STORAGE_KEY_PROGRESS, JSON.stringify(data)); }
+        function saveMasteredWordSet() { localStorage.setItem(STORAGE_KEY_MASTERED_WORDS, JSON.stringify([...masteredWordSet])); }
 
         // 날짜 헬퍼 (일간/주간(월요일 시작)/월간 구분용)
         function getTodayStr() {
@@ -676,8 +681,14 @@
             if (changed) saveProgress(progress);
         }
 
-        // 단어를 처음 마스터(Lv.5)했을 때만 일/주/월 목표 진행률에 반영
-        function recordMastery() {
+        // 단어를 처음 마스터(Lv.3)했을 때만 일/주/월 목표 진행률에 반영
+        // wordText가 이미 한 번이라도 반영된 적 있으면(같은 단어를 다른 단어장에서, 또는 재마스터해서
+        // 또 도달해도) 목표 진행률에는 중복으로 카운트하지 않음
+        function recordMastery(wordText) {
+            const key = (wordText || '').trim().toLowerCase();
+            if(key && masteredWordSet.has(key)) return;
+            if(key) { masteredWordSet.add(key); saveMasteredWordSet(); }
+
             ensureProgressFresh();
             progress.dailyCount++;
             progress.weeklyCount++;
@@ -855,7 +866,7 @@
             const w = pool[fcIndex];
             w.box = Math.min(MASTER_LEVEL, (w.box || 1) + 1); // 한 단계씩 승급 (Lv.1~MASTER_LEVEL)
             const justMastered = w.box >= MASTER_LEVEL;
-            if(justMastered) recordMastery(); // 방금 마스터한 경우에만 목표 진행률 반영
+            if(justMastered) recordMastery(w.word); // 방금 마스터한 경우에만 목표 진행률 반영
             saveWords(words);
             if(justMastered) removeFromUnmemorizedBookIfMastered(w);
             updateStreak();
@@ -1091,7 +1102,7 @@
                 const wasMastered = (quizCurrent.box || 1) >= MASTER_LEVEL;
                 quizCurrent.box = Math.min(MASTER_LEVEL, (quizCurrent.box || 1) + 1);
                 const justMastered = !wasMastered && quizCurrent.box >= MASTER_LEVEL;
-                if(justMastered) recordMastery();
+                if(justMastered) recordMastery(quizCurrent.word);
                 saveWords(words);
                 if(justMastered) removeFromUnmemorizedBookIfMastered(quizCurrent);
             } else {
@@ -1436,6 +1447,8 @@
             saveStats(stats);
             progress = { dailyDate: null, dailyCount: 0, weeklyStart: null, weeklyCount: 0, monthlyMonth: null, monthlyCount: 0 };
             saveProgress(progress);
+            masteredWordSet = new Set(); // 목표 진행률 초기화 시 중복 카운팅 방지 목록도 함께 비움 (다시 마스터하면 카운트되도록)
+            saveMasteredWordSet();
         }
 
         // ==================================================================
@@ -1449,7 +1462,8 @@
                 exportedAt: new Date().toISOString(),
                 wordBooks, activeWordBookId,
                 readingBooks, activeReadingBookId,
-                stats, userGoals, bqStats, progress
+                stats, userGoals, bqStats, progress,
+                masteredWords: [...masteredWordSet]
             };
         }
 
@@ -1472,10 +1486,11 @@
             if(data.userGoals) userGoals = data.userGoals;
             if(data.bqStats) bqStats = data.bqStats;
             if(data.progress) progress = data.progress;
+            masteredWordSet = new Set(Array.isArray(data.masteredWords) ? data.masteredWords : []);
 
             saveWordBooks(); saveActiveWordBookId();
             saveReadingBooks(); saveActiveReadingBookId();
-            saveStats(stats); saveGoals(userGoals); saveBQStats(bqStats); saveProgress(progress);
+            saveStats(stats); saveGoals(userGoals); saveBQStats(bqStats); saveProgress(progress); saveMasteredWordSet();
 
             words = getActiveWordBook().words;
             document.getElementById("input-goal-daily").value = userGoals.daily;
