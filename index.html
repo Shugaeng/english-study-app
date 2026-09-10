@@ -371,14 +371,14 @@
                     <!-- 접음/펼침이 가능한 단어 목록 헤더 -->
                     <div id="toggle-wordlist-section" class="flex justify-between items-center cursor-pointer select-none">
                         <h2 class="text-[17px] font-bold text-textDark">선택한 단어장의 단어 (<span id="lib-word-count">0</span>개)</h2>
-                        <div class="w-8 h-8 rounded-full bg-cardGray flex items-center justify-center text-textMuted transition-transform duration-300" id="wordlist-toggle-icon">
+                        <div class="w-8 h-8 rounded-full bg-cardGray flex items-center justify-center text-textMuted transition-transform duration-300" id="wordlist-toggle-icon" style="transform: rotate(-180deg);">
                             <i class="fa-solid fa-chevron-down text-sm"></i>
                         </div>
                     </div>
                 </div>
 
                 <!-- 접음/펼침 대상 영역 -->
-                <div id="wordlist-container-wrap" class="px-6 pb-6 transition-all duration-300">
+                <div id="wordlist-container-wrap" class="px-6 pb-6 transition-all duration-300" style="display:none;">
                     <div id="lib-word-list" class="flex flex-col gap-3"></div>
                 </div>
             </section>
@@ -637,7 +637,7 @@
         let userGoals = JSON.parse(localStorage.getItem(STORAGE_KEY_GOALS)) || { daily: 10, weekly: 50, monthly: 200 };
         let bqStats = JSON.parse(localStorage.getItem(STORAGE_KEY_BQ)) || { correct: 0, total: 0 };
         let progress = JSON.parse(localStorage.getItem(STORAGE_KEY_PROGRESS)) || { dailyDate: null, dailyCount: 0, weeklyStart: null, weeklyCount: 0, monthlyMonth: null, monthlyCount: 0 };
-        let isWordListOpen = true; // 단어장 접힘 상태 관리
+        let isWordListOpen = false; // 단어장 접힘 상태 관리 (기본값: 닫힘)
 
         function saveStats(data) { localStorage.setItem(STORAGE_KEY_STATS, JSON.stringify(data)); }
         function saveGoals(data) { localStorage.setItem(STORAGE_KEY_GOALS, JSON.stringify(data)); }
