@@ -519,7 +519,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.3.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.4.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -897,6 +897,19 @@
             return words.filter(w => (w.box || 1) < MASTER_LEVEL);
         }
 
+        // 4지선다 보기를 만들 만큼 전체 단어장에 단어가 충분한지 확인용 (오답 보기는 다른 단어장에서도 끌어옴)
+        function getTotalWordCountAcrossBooks() {
+            return wordBooks.reduce((sum, b) => sum + b.words.length, 0);
+        }
+
+        // candidates 중 아직 options에 없는 뜻을 max개가 될 때까지 채워 넣음
+        function fillOptionsFrom(options, candidates, max) {
+            for(const w of candidates) {
+                if(options.length >= max) break;
+                if(!options.includes(w.meaning)) options.push(w.meaning);
+            }
+        }
+
         // 퀴즈에서 틀리거나 시간초과된 단어를 '미암기 단어장'에 자동으로 모아둠
         // (다른 단어장에서 틀린 단어라도 사본이 미암기 단어장에 추가/갱신됨)
         function addToUnmemorizedBook(w) {
@@ -946,8 +959,12 @@
 
         document.getElementById("quiz-start-btn").addEventListener("click", async () => {
             const pool = getQuizPool();
-            if(pool.length < 4) {
-                await showAlert(words.length < 4 ? "단어가 4개 이상 필요해요!" : "🎉 모든 단어를 암기 완료했어요! 새 단어를 추가하거나 학습 기록을 초기화해보세요.");
+            if(pool.length === 0) {
+                await showAlert(words.length === 0 ? "단어가 없어요! 먼저 단어를 추가해주세요." : "🎉 모든 단어를 암기 완료했어요! 새 단어를 추가하거나 학습 기록을 초기화해보세요.");
+                return;
+            }
+            if(getTotalWordCountAcrossBooks() < 4) {
+                await showAlert("보기(4지선다)를 만들려면 전체 단어장을 통틀어 단어가 4개 이상 있어야 해요.\n다른 단어장에 단어를 추가해주세요!");
                 return;
             }
             const ok = await showConfirm("퀴즈를 시작할까요?\n문제당 4초 안에 답을 선택해야 합니다.\n시간이 지나면 오답으로 처리돼요.");
@@ -960,9 +977,11 @@
         function initQuiz() {
             clearTimeout(quizTimerId);
             const pool = getQuizPool();
-            if(pool.length < 4) {
+            if(pool.length === 0 || getTotalWordCountAcrossBooks() < 4) {
                 document.getElementById("quiz-question-word").textContent =
-                    words.length < 4 ? "단어가 4개 이상 필요해요!" : "🎉 모든 단어를 암기 완료했어요!";
+                    pool.length === 0
+                        ? (words.length === 0 ? "단어가 없어요!" : "🎉 모든 단어를 암기 완료했어요!")
+                        : "보기를 만들 단어가 부족해요!";
                 document.getElementById("quiz-box-badge").textContent = "";
                 document.getElementById("quiz-options").innerHTML = "";
                 document.getElementById("quiz-timer-bar").style.width = "0%";
@@ -974,19 +993,22 @@
 
         function loadNewQuiz() {
             const pool = getQuizPool();
-            if(pool.length < 4) { initQuiz(); return; } // 학습 도중 전부 마스터된 경우 안전장치
+            if(pool.length === 0 || getTotalWordCountAcrossBooks() < 4) { initQuiz(); return; } // 학습 도중 전부 마스터된 경우 안전장치
             quizCurrent = pool[Math.floor(Math.random() * pool.length)];
             quizAnswered = false;
             document.getElementById("quiz-question-word").textContent = quizCurrent.word;
             document.getElementById("quiz-box-badge").textContent = `Lv.${quizCurrent.box || 1}`;
             document.getElementById("quiz-next-btn").classList.add("hidden");
 
-            // 보기 생성: 반드시 종료되는 방식으로 변경 (뜻이 중복되거나 풀이 작아도 무한루프 없음)
+            // 보기 생성: 현재 단어장 → (부족하면) 현재 단어장의 마스터 단어까지 → (그래도 부족하면) 다른 단어장 순으로
+            // 오답 후보를 채워서 4지선다를 완성함 (뜻이 중복되거나 단어장이 작아도 항상 종료됨)
             let options = [quizCurrent.meaning];
-            const shuffledPool = [...pool].sort(() => Math.random() - 0.5);
-            for(const w of shuffledPool) {
-                if(options.length >= 4) break;
-                if(!options.includes(w.meaning)) options.push(w.meaning);
+            fillOptionsFrom(options, [...pool].sort(() => Math.random() - 0.5), 4);
+            fillOptionsFrom(options, [...words].sort(() => Math.random() - 0.5), 4);
+            if(options.length < 4) {
+                const otherWords = [];
+                wordBooks.forEach(b => { if(b.id !== activeWordBookId) otherWords.push(...b.words); });
+                fillOptionsFrom(options, otherWords.sort(() => Math.random() - 0.5), 4);
             }
             options.sort(() => Math.random() - 0.5);
 
