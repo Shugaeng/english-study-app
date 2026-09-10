@@ -207,7 +207,7 @@
                         <i class="fa-solid fa-puzzle-piece text-primary text-3xl"></i>
                         <div>
                             <h2 class="text-lg font-bold text-textDark mb-1">단어 퀴즈 준비됐나요?</h2>
-                            <p class="text-xs text-textMuted leading-relaxed">문제당 3초 안에 답을 선택해야 해요.<br>암기 완료(Lv.3) 단어는 출제되지 않습니다.</p>
+                            <p class="text-xs text-textMuted leading-relaxed">문제당 4초 안에 답을 선택해야 해요.<br>암기 완료(Lv.3) 단어는 출제되지 않습니다.</p>
                         </div>
                         <button id="quiz-start-btn" class="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-md shadow-primary/30 active:scale-95 transition-transform">퀴즈 시작하기</button>
                     </div>
@@ -215,7 +215,7 @@
                     <!-- 퀴즈 진행 화면 -->
                     <div id="quiz-play-area" class="hidden">
                         <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-4 text-center">
-                            <span class="text-xs text-textMuted font-medium block mb-2">다음 단어의 알맞은 뜻은? <span class="text-primary/70">(3초 안에 선택!)</span></span>
+                            <span class="text-xs text-textMuted font-medium block mb-2">다음 단어의 알맞은 뜻은? <span class="text-primary/70">(4초 안에 선택!)</span></span>
                             <h2 id="quiz-question-word" class="text-3xl font-black text-primary mb-2">-</h2>
                         </div>
 
@@ -518,7 +518,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.0.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.1.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -888,7 +888,8 @@
 
         let quizTimerId = null;
         let quizAnswered = false;
-        const QUIZ_TIME_LIMIT = 3000; // 3초 제한시간
+        const QUIZ_TIME_LIMIT = 4000; // 4초 제한시간
+        const QUIZ_CORRECT_ADVANCE_DELAY = 700; // 정답 시 다음 문제로 자동 넘어가기 전 대기시간(ms)
 
         function getQuizPool() {
             return words.filter(w => (w.box || 1) < MASTER_LEVEL);
@@ -930,11 +931,11 @@
 
         document.getElementById("quiz-start-btn").addEventListener("click", async () => {
             const pool = getQuizPool();
-            if(pool.length < 3) {
-                await showAlert(words.length < 3 ? "단어가 3개 이상 필요해요!" : "🎉 모든 단어를 암기 완료했어요! 새 단어를 추가하거나 학습 기록을 초기화해보세요.");
+            if(pool.length < 4) {
+                await showAlert(words.length < 4 ? "단어가 4개 이상 필요해요!" : "🎉 모든 단어를 암기 완료했어요! 새 단어를 추가하거나 학습 기록을 초기화해보세요.");
                 return;
             }
-            const ok = await showConfirm("퀴즈를 시작할까요?\n문제당 3초 안에 답을 선택해야 합니다.\n시간이 지나면 오답으로 처리돼요.");
+            const ok = await showConfirm("퀴즈를 시작할까요?\n문제당 4초 안에 답을 선택해야 합니다.\n시간이 지나면 오답으로 처리돼요.");
             if(!ok) return;
             document.getElementById("quiz-start-area").classList.add("hidden");
             document.getElementById("quiz-play-area").classList.remove("hidden");
@@ -944,9 +945,9 @@
         function initQuiz() {
             clearTimeout(quizTimerId);
             const pool = getQuizPool();
-            if(pool.length < 3) {
+            if(pool.length < 4) {
                 document.getElementById("quiz-question-word").textContent =
-                    words.length < 3 ? "단어가 3개 이상 필요해요!" : "🎉 모든 단어를 암기 완료했어요!";
+                    words.length < 4 ? "단어가 4개 이상 필요해요!" : "🎉 모든 단어를 암기 완료했어요!";
                 document.getElementById("quiz-options").innerHTML = "";
                 document.getElementById("quiz-timer-bar").style.width = "0%";
                 document.getElementById("quiz-next-btn").classList.add("hidden");
@@ -957,7 +958,7 @@
 
         function loadNewQuiz() {
             const pool = getQuizPool();
-            if(pool.length < 3) { initQuiz(); return; } // 학습 도중 전부 마스터된 경우 안전장치
+            if(pool.length < 4) { initQuiz(); return; } // 학습 도중 전부 마스터된 경우 안전장치
             quizCurrent = pool[Math.floor(Math.random() * pool.length)];
             quizAnswered = false;
             document.getElementById("quiz-question-word").textContent = quizCurrent.word;
@@ -967,7 +968,7 @@
             let options = [quizCurrent.meaning];
             const shuffledPool = [...pool].sort(() => Math.random() - 0.5);
             for(const w of shuffledPool) {
-                if(options.length >= 3) break;
+                if(options.length >= 4) break;
                 if(!options.includes(w.meaning)) options.push(w.meaning);
             }
             options.sort(() => Math.random() - 0.5);
@@ -999,7 +1000,7 @@
             }, QUIZ_TIME_LIMIT);
         }
 
-        // 3초 안에 응답하지 않으면 '모르는 단어'로 간주 -> 미암기(Lv.1) 처리하여 암기카드에서 다시 학습
+        // 4초 안에 응답하지 않으면 '모르는 단어'로 간주 -> 미암기(Lv.1) 처리하여 암기카드에서 다시 학습
         function handleQuizTimeout() {
             quizAnswered = true;
             quizCurrent.box = 1;
@@ -1062,8 +1063,16 @@
             saveStats(stats);
             updateStreak();
             updateQuizScoreDisplay();
-            document.getElementById("quiz-next-btn").classList.remove("hidden");
             renderDashboard();
+
+            if(isCorrect) {
+                // 정답이면 '다음 문제' 버튼 없이 잠깐 정답 표시 후 자동으로 다음 문제로 넘어감
+                // (quizTimerId를 재사용 — switchTab에서 다른 탭으로 나가면 clearTimeout으로 자동 취소됨)
+                quizTimerId = setTimeout(() => { loadNewQuiz(); }, QUIZ_CORRECT_ADVANCE_DELAY);
+            } else {
+                // 오답이면 지금처럼 '다음 문제' 버튼을 직접 눌러야 넘어감
+                document.getElementById("quiz-next-btn").classList.remove("hidden");
+            }
         }
 
         document.getElementById("quiz-next-btn").addEventListener("click", () => {
