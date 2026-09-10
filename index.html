@@ -144,6 +144,8 @@
                         </div>
                         <span class="text-lg font-bold text-purple-600" id="dash-bq-rate">0%</span>
                     </div>
+
+                    <p class="text-[11px] text-textMuted text-right pt-1">shugaeng · <span id="dash-app-version">v1.0.0</span></p>
                 </div>
             </section>
 
@@ -516,6 +518,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
+        const APP_VERSION = "v1.0.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -714,6 +717,7 @@
         function renderDashboard() {
             ensureProgressFresh();
             document.getElementById("dash-streak").textContent = stats.streak;
+            document.getElementById("dash-app-version").textContent = APP_VERSION;
 
             populateDashboardWordBookSelector();
             const dashWords = getDashboardWordBook().words;
