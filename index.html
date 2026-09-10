@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>종합 영어 학습 앱</title>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -98,11 +98,27 @@
                             </div>
                         </div>
                     </div>
-                    <p class="text-[11px] text-textMuted mt-3">현재 단어장 기준: <span id="dash-active-wordbook" class="font-bold text-textDark">-</span></p>
+                    <div class="mt-3 flex items-center gap-2">
+                        <span class="text-[11px] text-textMuted whitespace-nowrap">현재 단어장 기준</span>
+                        <select id="dash-wordbook-select" class="book-select flex-1 min-w-0 bg-cardGray border border-divider rounded-lg px-2.5 py-1.5 text-xs font-bold text-textDark" onchange="changeDashboardWordBook(this.value)"></select>
+                    </div>
                 </div>
 
                 <!-- 상세 통계 카드들 -->
                 <div class="px-6 space-y-4">
+                    <div class="bg-white rounded-2xl p-5 shadow-card flex items-center justify-between">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-textDark">미암기 단어율</h3>
+                                <p class="text-xs text-textMuted mt-0.5">등록 단어 대비 미암기 비율</p>
+                            </div>
+                        </div>
+                        <span class="text-lg font-bold text-orange-500" id="dash-unmemorized-rate">0%</span>
+                    </div>
+
                     <div class="bg-white rounded-2xl p-5 shadow-card flex items-center justify-between">
                         <div class="flex items-center gap-3.5">
                             <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-lg">
@@ -467,6 +483,7 @@
 
         const STORAGE_KEY_WORDBOOKS = "english_study_wordbooks_v4";
         const STORAGE_KEY_ACTIVE_WORDBOOK = "english_study_active_wordbook_v4";
+        const STORAGE_KEY_DASH_WORDBOOK = "english_study_dash_wordbook_v4";
         const STORAGE_KEY_READINGBOOKS = "english_study_readingbooks_v4";
         const STORAGE_KEY_ACTIVE_READINGBOOK = "english_study_active_readingbook_v4";
         const STORAGE_KEY_SPLIT_BATCH = "english_study_split_batch_v4";
@@ -574,7 +591,18 @@
             const oldWords = JSON.parse(localStorage.getItem(STORAGE_KEY_WORDS));
             wordBooks = [{ id: 'default', name: '기본 단어장', words: oldWords || DEFAULT_WORDS }];
         }
-        let activeWordBookId = localStorage.getItem(STORAGE_KEY_ACTIVE_WORDBOOK) || wordBooks[0].id;
+
+        // 미암기 단어장: 퀴즈 탭에서 틀리거나 시간초과된 단어가 자동으로 모이는 전용 단어장 (항상 존재해야 함)
+        const UNMEMORIZED_BOOK_ID = 'unmemorized';
+        function ensureUnmemorizedBookExists() {
+            if(!wordBooks.find(b => b.id === UNMEMORIZED_BOOK_ID)) {
+                wordBooks.unshift({ id: UNMEMORIZED_BOOK_ID, name: '미암기 단어장', words: [] });
+            }
+        }
+        ensureUnmemorizedBookExists();
+
+        // 퀴즈/암기 탭의 기본 단어장은 미암기 단어장 — 단, 이전에 다른 단어장을 선택한 적이 있다면 그 선택을 유지
+        let activeWordBookId = localStorage.getItem(STORAGE_KEY_ACTIVE_WORDBOOK) || UNMEMORIZED_BOOK_ID;
         if(!wordBooks.find(b => b.id === activeWordBookId)) activeWordBookId = wordBooks[0].id;
 
         let readingBooks = JSON.parse(localStorage.getItem(STORAGE_KEY_READINGBOOKS));
@@ -590,6 +618,13 @@
         function saveActiveWordBookId() { localStorage.setItem(STORAGE_KEY_ACTIVE_WORDBOOK, activeWordBookId); }
         function saveReadingBooks() { localStorage.setItem(STORAGE_KEY_READINGBOOKS, JSON.stringify(readingBooks)); }
         function saveActiveReadingBookId() { localStorage.setItem(STORAGE_KEY_ACTIVE_READINGBOOK, activeReadingBookId); }
+
+        // 현황 탭 전용 단어장 선택 — 암기/퀴즈 탭에서 쓰는 활성 단어장과는 별도로,
+        // 현황 탭의 통계(마스터 단어/미암기 단어율)를 어떤 단어장 기준으로 볼지 독립적으로 고를 수 있음
+        let dashboardWordBookId = localStorage.getItem(STORAGE_KEY_DASH_WORDBOOK) || activeWordBookId;
+        if(!wordBooks.find(b => b.id === dashboardWordBookId)) dashboardWordBookId = activeWordBookId;
+        function getDashboardWordBook() { return wordBooks.find(b => b.id === dashboardWordBookId) || getActiveWordBook(); }
+        function saveDashboardWordBookId() { localStorage.setItem(STORAGE_KEY_DASH_WORDBOOK, dashboardWordBookId); }
 
         // `words`는 항상 "현재 선택된 단어장"의 단어 배열을 가리킴
         let words = getActiveWordBook().words;
@@ -680,12 +715,18 @@
         function renderDashboard() {
             ensureProgressFresh();
             document.getElementById("dash-streak").textContent = stats.streak;
-            document.getElementById("dash-active-wordbook").textContent = getActiveWordBook().name;
-            const masterCount = words.filter(w => (w.box || 1) >= MASTER_LEVEL).length;
+
+            populateDashboardWordBookSelector();
+            const dashWords = getDashboardWordBook().words;
+            const masterCount = dashWords.filter(w => (w.box || 1) >= MASTER_LEVEL).length;
             document.getElementById("dash-master-count").textContent = `${masterCount}개`;
-            
-            const masterPercent = words.length > 0 ? Math.round((masterCount / words.length) * 100) : 0;
+
+            const masterPercent = dashWords.length > 0 ? Math.round((masterCount / dashWords.length) * 100) : 0;
             document.getElementById("dash-master-bar").style.width = `${masterPercent}%`;
+
+            const unmemorizedCount = dashWords.length - masterCount;
+            const unmemorizedPercent = dashWords.length > 0 ? Math.round((unmemorizedCount / dashWords.length) * 100) : 0;
+            document.getElementById("dash-unmemorized-rate").textContent = `${unmemorizedPercent}%`;
 
             document.getElementById("goal-stat-daily").textContent = `${progress.dailyCount}/${userGoals.daily}`;
             document.getElementById("goal-stat-weekly").textContent = `${progress.weeklyCount}/${userGoals.weekly}`;
@@ -710,6 +751,26 @@
             document.querySelectorAll('.wordbook-select').forEach(sel => {
                 sel.innerHTML = wordBooks.map(b => `<option value="${b.id}" ${b.id===activeWordBookId?'selected':''}>${escapeHtml(b.name)} (${b.words.length}개)</option>`).join('');
             });
+            populateDashboardWordBookSelector();
+        }
+
+        // 현황 탭의 단어장 선택 드롭다운 — 목록이 바뀌면 선택값이 더 이상 존재하지 않을 수 있으므로
+        // 유효성을 확인 후 옵션을 다시 그림
+        function populateDashboardWordBookSelector() {
+            if(!wordBooks.find(b => b.id === dashboardWordBookId)) {
+                dashboardWordBookId = wordBooks.find(b => b.id === activeWordBookId) ? activeWordBookId : wordBooks[0].id;
+                saveDashboardWordBookId();
+            }
+            const sel = document.getElementById("dash-wordbook-select");
+            if(!sel) return;
+            sel.innerHTML = wordBooks.map(b => `<option value="${b.id}" ${b.id===dashboardWordBookId?'selected':''}>${escapeHtml(b.name)} (${b.words.length}개)</option>`).join('');
+        }
+
+        function changeDashboardWordBook(id) {
+            if(!id || id === dashboardWordBookId) return;
+            dashboardWordBookId = id;
+            saveDashboardWordBookId();
+            renderDashboard();
         }
         function populateReadingBookSelectors() {
             document.querySelectorAll('.readingbook-select').forEach(sel => {
@@ -830,6 +891,23 @@
             return words.filter(w => (w.box || 1) < MASTER_LEVEL);
         }
 
+        // 퀴즈에서 틀리거나 시간초과된 단어를 '미암기 단어장'에 자동으로 모아둠
+        // (다른 단어장에서 틀린 단어라도 사본이 미암기 단어장에 추가/갱신됨)
+        function addToUnmemorizedBook(w) {
+            ensureUnmemorizedBookExists();
+            const book = wordBooks.find(b => b.id === UNMEMORIZED_BOOK_ID);
+            const existing = book.words.find(item => item.word.toLowerCase() === w.word.toLowerCase());
+            if(existing) {
+                existing.box = 1;
+                existing.meaning = w.meaning;
+            } else {
+                book.words.push({ id: uid(), word: w.word, meaning: w.meaning, box: 1 });
+            }
+            saveWordBooks();
+            if(activeWordBookId === UNMEMORIZED_BOOK_ID) words = book.words;
+            populateWordBookSelectors();
+        }
+
         // 정답 표시는 세션이 아니라 stats(누적 기록)를 그대로 보여줌 — 설정 탭에서 초기화하기 전까지는
         // 탭을 이동했다 돌아와도 절대 리셋되지 않음
         function updateQuizScoreDisplay() {
@@ -923,6 +1001,7 @@
             quizAnswered = true;
             quizCurrent.box = 1;
             saveWords(words);
+            addToUnmemorizedBook(quizCurrent);
 
             const buttons = document.querySelectorAll("#quiz-options button");
             buttons.forEach(b => {
@@ -975,6 +1054,7 @@
                 // 오답도 미암기 처리하여 암기카드에서 복습 가능하게 함
                 quizCurrent.box = 1;
                 saveWords(words);
+                addToUnmemorizedBook(quizCurrent);
             }
             saveStats(stats);
             updateStreak();
@@ -1325,6 +1405,7 @@
             }
 
             wordBooks = data.wordBooks;
+            ensureUnmemorizedBookExists();
             activeWordBookId = data.activeWordBookId && wordBooks.find(b => b.id === data.activeWordBookId)
                 ? data.activeWordBookId : wordBooks[0].id;
 
@@ -1512,8 +1593,9 @@
         });
 
         document.getElementById("delete-wordbook-btn").addEventListener("click", async () => {
-            if(wordBooks.length <= 1) { await showAlert("최소 하나의 단어장은 남아있어야 합니다."); return; }
             const book = getActiveWordBook();
+            if(book.id === UNMEMORIZED_BOOK_ID) { await showAlert("'미암기 단어장'은 퀴즈 탭에서 틀린 단어가 자동으로 모이는 전용 단어장이라 삭제할 수 없습니다."); return; }
+            if(wordBooks.length <= 1) { await showAlert("최소 하나의 단어장은 남아있어야 합니다."); return; }
             if(!(await showConfirm(`'${book.name}' 단어장을 삭제할까요?\n포함된 단어 ${book.words.length}개가 모두 삭제됩니다.`))) return;
             wordBooks = wordBooks.filter(b => b.id !== book.id);
             activeWordBookId = wordBooks[0].id;
