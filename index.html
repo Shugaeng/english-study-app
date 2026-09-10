@@ -214,7 +214,8 @@
 
                     <!-- 퀴즈 진행 화면 -->
                     <div id="quiz-play-area" class="hidden">
-                        <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-4 text-center">
+                        <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-4 text-center relative">
+                            <span id="quiz-box-badge" class="absolute top-4 right-4 bg-primary/10 text-primary text-xs font-bold px-2.5 py-1 rounded-full">Lv.1</span>
                             <span class="text-xs text-textMuted font-medium block mb-2">다음 단어의 알맞은 뜻은? <span class="text-primary/70">(4초 안에 선택!)</span></span>
                             <h2 id="quiz-question-word" class="text-3xl font-black text-primary mb-2">-</h2>
                         </div>
@@ -518,7 +519,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.1.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.2.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -948,6 +949,7 @@
             if(pool.length < 4) {
                 document.getElementById("quiz-question-word").textContent =
                     words.length < 4 ? "단어가 4개 이상 필요해요!" : "🎉 모든 단어를 암기 완료했어요!";
+                document.getElementById("quiz-box-badge").textContent = "";
                 document.getElementById("quiz-options").innerHTML = "";
                 document.getElementById("quiz-timer-bar").style.width = "0%";
                 document.getElementById("quiz-next-btn").classList.add("hidden");
@@ -962,6 +964,7 @@
             quizCurrent = pool[Math.floor(Math.random() * pool.length)];
             quizAnswered = false;
             document.getElementById("quiz-question-word").textContent = quizCurrent.word;
+            document.getElementById("quiz-box-badge").textContent = `Lv.${quizCurrent.box || 1}`;
             document.getElementById("quiz-next-btn").classList.add("hidden");
 
             // 보기 생성: 반드시 종료되는 방식으로 변경 (뜻이 중복되거나 풀이 작아도 무한루프 없음)
