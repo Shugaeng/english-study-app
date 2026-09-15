@@ -351,7 +351,11 @@
                             <div id="speak-wrong-words" class="flex flex-wrap gap-2"></div>
                         </div>
 
-                        <div id="speak-score-badge" class="text-center bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold py-2.5 rounded-xl"></div>
+                        <div id="speak-score-badge" class="text-center bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold py-2.5 rounded-xl mb-3"></div>
+
+                        <button id="speak-retry-btn" class="w-full bg-textDark text-white font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-rotate-right"></i> 다시 풀기
+                        </button>
                     </div>
                 </div>
             </section>
@@ -672,7 +676,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.9.2"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.9.3"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1965,9 +1969,20 @@
 
             renderWrongWords(targetDisplay, matched);
 
-            document.getElementById("speak-score-badge").textContent = `스피킹 정확도 ${percent}점 · ${speakingScoreMessage(percent)}`;
+            const scoreLabel = source === 'typed' ? '타이핑 정확도' : '스피킹 정확도';
+            document.getElementById("speak-score-badge").textContent = `${scoreLabel} ${percent}점 · ${speakingScoreMessage(percent)}`;
             document.getElementById("speak-result-area").classList.remove("hidden");
         }
+
+        // 결과 화면의 '다시 풀기' — 결과를 닫고, 입력창을 비우고, 재생/인식 중이던 것을 정리해서
+        // 같은 문장(또는 에피소드)을 바로 다시 시도할 수 있게 함
+        document.getElementById("speak-retry-btn").addEventListener("click", () => {
+            stopSpeakingRecognition();
+            stopSpeakingSynthesis();
+            document.getElementById("speak-write-input").value = "";
+            document.getElementById("speak-result-area").classList.add("hidden");
+            document.getElementById("speak-ko-sentence").scrollIntoView({ block: "center", behavior: "smooth" });
+        });
 
         // 틀린(인식되지 않은) 단어만 중복 없이 뽑아서, 탭하면 그 단어 하나만 다시 들을 수 있는
         // 칩 목록으로 보여줌 — 문장 전체를 다시 듣는 것보다 틀린 부분만 콕 집어 연습하기 좋음
