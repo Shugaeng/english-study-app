@@ -333,6 +333,12 @@
                         <p id="speak-recognized-text" class="text-sm text-textMuted mb-3"></p>
                         <div class="text-xs font-bold text-textMuted mb-2">목표 문장 <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span></div>
                         <p id="speak-result-sentence" class="text-lg leading-relaxed text-textDark mb-4"></p>
+
+                        <div id="speak-wrong-words-wrap" class="hidden mb-4">
+                            <div class="text-xs font-bold text-textMuted mb-2">❌ 틀린 단어만 연습 <span class="font-normal">(탭하면 발음을 들려줘요)</span></div>
+                            <div id="speak-wrong-words" class="flex flex-wrap gap-2"></div>
+                        </div>
+
                         <div id="speak-score-badge" class="text-center bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold py-2.5 rounded-xl"></div>
                     </div>
                 </div>
@@ -654,7 +660,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.7.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.8.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1897,8 +1903,42 @@
             });
             if(groups.length === 0) resultEl.textContent = target.en;
 
+            renderWrongWords(targetDisplay, matched);
+
             document.getElementById("speak-score-badge").textContent = `스피킹 정확도 ${percent}점 · ${speakingScoreMessage(percent)}`;
             document.getElementById("speak-result-area").classList.remove("hidden");
+        }
+
+        // 틀린(인식되지 않은) 단어만 중복 없이 뽑아서, 탭하면 그 단어 하나만 다시 들을 수 있는
+        // 칩 목록으로 보여줌 — 문장 전체를 다시 듣는 것보다 틀린 부분만 콕 집어 연습하기 좋음
+        function renderWrongWords(targetDisplay, matched) {
+            const wrap = document.getElementById("speak-wrong-words-wrap");
+            const container = document.getElementById("speak-wrong-words");
+            container.innerHTML = "";
+
+            const seen = new Set();
+            const wrongWords = [];
+            targetDisplay.forEach((w, idx) => {
+                if(matched[idx]) return;
+                const cleanWord = w.replace(/^[^a-zA-Z0-9']+|[^a-zA-Z0-9']+$/g, ''); // 앞뒤 구두점 제거
+                const key = cleanWord.toLowerCase();
+                if(!cleanWord || seen.has(key)) return;
+                seen.add(key);
+                wrongWords.push(cleanWord);
+            });
+
+            if(wrongWords.length === 0) {
+                wrap.classList.add("hidden");
+                return;
+            }
+            wrap.classList.remove("hidden");
+            wrongWords.forEach(word => {
+                const btn = document.createElement("button");
+                btn.className = "bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full border border-red-200 active:scale-95 transition-transform";
+                btn.textContent = word;
+                btn.addEventListener("click", () => speakEnglishText(word));
+                container.appendChild(btn);
+            });
         }
 
         // 브라우저 내장 음성 인식(Web Speech API) — Chrome 계열에서 잘 동작하며,
