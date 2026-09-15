@@ -43,6 +43,10 @@
         .passage-word.enabled { cursor: pointer; }
         .passage-word.enabled:hover { background-color: rgba(91, 92, 240, 0.1); color: #5B5CF0; border-radius: 4px; }
         .book-select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238B95A1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+        .speak-word-correct { text-decoration: underline; text-decoration-color: #34A853; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+        .speak-word-wrong { text-decoration: underline dotted; text-decoration-color: #EA4335; text-decoration-thickness: 2px; text-underline-offset: 3px; color: #C5221F; }
+        #speak-mic-btn.recording { animation: speak-pulse 1.2s ease-in-out infinite; background-color: #EA4335 !important; }
+        @keyframes speak-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(234,67,53,0.4); } 50% { box-shadow: 0 0 0 14px rgba(234,67,53,0); } }
     </style>
 </head>
 <body class="bg-gray-200 flex justify-center items-center min-h-screen">
@@ -268,7 +272,51 @@
                 </div>
             </section>
 
-            <!-- 5. 라이브러리 및 설정 탭 (Library & Settings) -->
+            <!-- 5. 말하기 탭 (Speaking Practice) -->
+            <section id="panel-speaking" class="panel">
+                <div class="bg-white rounded-b-[2rem] pt-14 pb-6 px-6 shadow-sm mb-6">
+                    <div class="flex justify-between items-end mb-3">
+                        <div>
+                            <h1 class="text-2xl font-bold text-textDark">말하기 연습 <i class="fa-solid fa-microphone text-primary ml-1"></i></h1>
+                            <p class="text-textMuted text-sm mt-1">한글 문장을 보고 영어로 말해보세요</p>
+                        </div>
+                    </div>
+                    <select class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark" onchange="changeSpeakingDay(this.value)"></select>
+                </div>
+
+                <div class="px-6 pb-6">
+                    <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-6">
+                        <div class="flex justify-center items-center text-xs text-textMuted font-medium mb-3">
+                            <span id="speak-progress-text">0 / 0</span>
+                        </div>
+                        <p id="speak-ko-sentence" class="text-xl font-bold text-textDark text-center leading-relaxed py-4">이 단어장(Day)에는 아직 문장이 없어요</p>
+
+                        <div id="speak-status-text" class="text-center text-xs text-textMuted min-h-[16px] mb-2">설정 탭에서 말하기 문장을 먼저 추가해주세요</div>
+
+                        <div class="flex items-center justify-center gap-6 mt-4">
+                            <button id="speak-prev-btn" class="w-10 h-10 rounded-full bg-cardGray flex items-center justify-center text-textMuted active:scale-95 transition-transform">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button id="speak-mic-btn" class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl shadow-md shadow-primary/30 active:scale-95 transition-transform">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                            <button id="speak-next-btn" class="w-10 h-10 rounded-full bg-cardGray flex items-center justify-center text-textMuted active:scale-95 transition-transform">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="speak-result-area" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card">
+                        <div class="text-xs font-bold text-textMuted mb-1">내가 말한 문장</div>
+                        <p id="speak-recognized-text" class="text-sm text-textMuted mb-3"></p>
+                        <div class="text-xs font-bold text-textMuted mb-2">목표 문장 <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span></div>
+                        <p id="speak-result-sentence" class="text-lg leading-relaxed text-textDark mb-4"></p>
+                        <div id="speak-score-badge" class="text-center bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold py-2.5 rounded-xl"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. 라이브러리 및 설정 탭 (Library & Settings) -->
             <section id="panel-library" class="panel">
                 <div class="bg-white rounded-b-[2rem] pt-14 pb-8 px-6 shadow-sm mb-6">
                     <h1 class="text-2xl font-bold text-textDark mb-6">설정 <i class="fa-solid fa-gear text-primary ml-1"></i></h1>
@@ -355,7 +403,26 @@
                             <button id="download-reading-json-btn" class="underline font-semibold text-primary">JSON</button>
                         </div>
                     </div>
-                    
+
+                    <!-- 말하기 문장 관리 -->
+                    <div class="bg-white rounded-2xl border border-divider p-5 shadow-card mb-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-microphone text-primary"></i> 말하기 문장 관리 (Day1~40)</h2>
+                        </div>
+                        <select class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeSpeakingDay(this.value)"></select>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <button id="add-speaking-sentence-btn" class="bg-primary text-white text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">문장 추가</button>
+                            <button id="import-speaking-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">가져오기</button>
+                        </div>
+                        <button id="clear-speaking-day-btn" class="w-full bg-red-50 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform mb-3">이 Day 문장 전체 삭제</button>
+                        <input type="file" id="speaking-file-input" accept=".json" style="display:none;">
+                        <div class="flex gap-3 text-[11px] text-textMuted mb-3">
+                            <span>대량 업로드 양식:</span>
+                            <button id="download-speaking-json-btn" class="underline font-semibold text-primary">JSON</button>
+                        </div>
+                        <div id="speaking-manage-list" class="flex flex-col gap-2"></div>
+                    </div>
+
                     <!-- 학습 기록 초기화 -->
                     <div class="bg-red-50 rounded-2xl border border-red-200 p-5 mb-6">
                         <h2 class="text-sm font-bold text-red-600 mb-2 flex items-center gap-2"><i class="fa-solid fa-rotate-right"></i> 학습 기록 초기화</h2>
@@ -406,6 +473,10 @@
                 <i class="fa-solid fa-book-open-reader text-lg"></i>
                 <span class="text-[11px] font-semibold">독해</span>
             </button>
+            <button onclick="switchTab('speaking')" class="tab-btn flex flex-col items-center gap-1 text-textMuted transition-colors" data-tab="speaking">
+                <i class="fa-solid fa-microphone text-lg"></i>
+                <span class="text-[11px] font-semibold">말하기</span>
+            </button>
             <button onclick="switchTab('library')" class="tab-btn flex flex-col items-center gap-1 text-textMuted transition-colors" data-tab="library">
                 <i class="fa-solid fa-gear text-lg"></i>
                 <span class="text-[11px] font-semibold">설정</span>
@@ -429,6 +500,27 @@
                 <div class="flex gap-2">
                     <button id="close-modal-btn" class="flex-1 bg-cardGray text-textMuted font-bold py-3 rounded-xl text-sm">취소</button>
                     <button id="save-new-word-btn" class="flex-1 bg-primary text-white font-bold py-3 rounded-xl text-sm shadow-md">저장</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 말하기 문장 추가 모달 -->
+        <div id="add-speaking-modal" class="absolute inset-0 bg-black/40 z-50 flex items-center justify-center p-6" style="display:none;">
+            <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+                <h3 class="text-lg font-bold text-textDark mb-4">새 문장 추가하기</h3>
+                <div class="space-y-3 mb-5">
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">한글 문장 (화면에 표시됨)</label>
+                        <textarea id="new-speaking-ko-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: 토요일에는 늦잠을 자고 싶었어요."></textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">영어 목표 문장 (채점 기준)</label>
+                        <textarea id="new-speaking-en-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I wanted to sleep in on Saturday."></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="close-speaking-modal-btn" class="flex-1 bg-cardGray text-textMuted font-bold py-3 rounded-xl text-sm">취소</button>
+                    <button id="save-new-speaking-btn" class="flex-1 bg-primary text-white font-bold py-3 rounded-xl text-sm shadow-md">저장</button>
                 </div>
             </div>
         </div>
@@ -490,6 +582,8 @@
         const STORAGE_KEY_DASH_WORDBOOK = "english_study_dash_wordbook_v4";
         const STORAGE_KEY_READINGBOOKS = "english_study_readingbooks_v4";
         const STORAGE_KEY_ACTIVE_READINGBOOK = "english_study_active_readingbook_v4";
+        const STORAGE_KEY_SPEAKING_DAYS = "english_study_speaking_days_v4";
+        const STORAGE_KEY_ACTIVE_SPEAKING_DAY = "english_study_active_speaking_day_v4";
 
         // ==================================================================
         // Firebase (클라우드 저장) — 아래 firebaseConfig 값을 본인 프로젝트 것으로 채워넣으면
@@ -520,7 +614,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.4.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.5.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -538,8 +632,15 @@
             {"id":"p3","p":"It is well known that any exercise, like running or playing basketball, is great for your body and can even help improve your mood. But scientists have recently learned that for a period of time after you've exercised, your body produces a chemical that makes your brain more effective in learning. Exercise can create a stronger, faster brain. So if you're stuck on a homework problem, ____________________, then try the problem again. You just might discover that you're able to solve it.","a":5,"t":"달리기나 농구 같은 운동이 신체에 도움이 되고 기분을 향상시킨다는 사실은 잘 알려져 있다. 최근 과학자들은 운동 후 몸이 두뇌의 학습을 더 효과적으로 만들어주는 화학물질을 분비한다는 것을 알아냈다. 운동은 강하고 빠른 두뇌를 만든다. 숙제를 하다 막히면 밖으로 나가 축구를 하고 와서 다시 풀어보아라. 문제를 해결할 수 있다는 것을 알게 될 수도 있다.","v":["exercise:운동하다","period:기간","chemical:화학물질"],"c":["take a short sleep for a while","look up other reference books","talk to your teachers or parents","spend more time on that subject","go out and play a game of soccer"]}
         ];
 
+        // Day1 예시 문장 (나머지 Day2~40은 빈 상태로 시작 — 설정 탭에서 문장을 추가/가져오기)
+        const DEFAULT_SPEAKING_SENTENCES = [
+            { id: "s1", ko: "토요일에는 늦잠을 자고 싶었지만, 몸이 일주일 내내 찌뿌둥했기 때문에 대신 러닝을 하러 가기로 했어요.", en: "I wanted to sleep in on Saturday, but I chose to go running instead because my body felt stiff all week." },
+            { id: "s2", ko: "저는 매일 아침 일어나자마자 물 한 잔을 마시는 습관을 들이려고 노력하고 있어요.", en: "I'm trying to build a habit of drinking a glass of water right after I wake up every morning." },
+            { id: "s3", ko: "이번 주말에는 특별한 계획이 없어서, 그냥 집에서 푹 쉬면서 밀린 드라마를 볼 것 같아요.", en: "I don't have any special plans this weekend, so I'll probably just relax at home and catch up on the shows I've missed." }
+        ];
+
         // ==================================================================
-        // 단어장 / 독해집 데이터 (다중 세트 지원) — 구버전 데이터가 있으면 자동 이전
+        // 단어장 / 독해집 / 말하기(Day) 데이터 (다중 세트 지원) — 구버전 데이터가 있으면 자동 이전
         // ==================================================================
         function uid() { return '_' + Math.random().toString(36).substr(2, 9); }
 
@@ -622,6 +723,23 @@
         function saveActiveWordBookId() { localStorage.setItem(STORAGE_KEY_ACTIVE_WORDBOOK, activeWordBookId); }
         function saveReadingBooks() { localStorage.setItem(STORAGE_KEY_READINGBOOKS, JSON.stringify(readingBooks)); }
         function saveActiveReadingBookId() { localStorage.setItem(STORAGE_KEY_ACTIVE_READINGBOOK, activeReadingBookId); }
+
+        // 말하기(Day1~40) 데이터 — Day는 사용자가 추가/삭제할 수 없는 고정 40개 슬롯이며,
+        // 각 슬롯 안의 문장만 설정 탭에서 추가/가져오기/삭제할 수 있음
+        let speakingDays = JSON.parse(localStorage.getItem(STORAGE_KEY_SPEAKING_DAYS));
+        if(!speakingDays || !Array.isArray(speakingDays) || speakingDays.length !== 40) {
+            speakingDays = Array.from({ length: 40 }, (_, i) => ({
+                id: `day${i + 1}`,
+                name: `Day ${i + 1}`,
+                sentences: (i === 0) ? DEFAULT_SPEAKING_SENTENCES : []
+            }));
+        }
+        let activeSpeakingDayId = localStorage.getItem(STORAGE_KEY_ACTIVE_SPEAKING_DAY) || speakingDays[0].id;
+        if(!speakingDays.find(d => d.id === activeSpeakingDayId)) activeSpeakingDayId = speakingDays[0].id;
+
+        function getActiveSpeakingDay() { return speakingDays.find(d => d.id === activeSpeakingDayId) || speakingDays[0]; }
+        function saveSpeakingDays() { localStorage.setItem(STORAGE_KEY_SPEAKING_DAYS, JSON.stringify(speakingDays)); }
+        function saveActiveSpeakingDayId() { localStorage.setItem(STORAGE_KEY_ACTIVE_SPEAKING_DAY, activeSpeakingDayId); }
 
         // 현황 탭 전용 단어장 선택 — 암기/퀴즈 탭에서 쓰는 활성 단어장과는 별도로,
         // 현황 탭의 통계(마스터 단어/미암기 단어율)를 어떤 단어장 기준으로 볼지 독립적으로 고를 수 있음
@@ -722,8 +840,10 @@
             if(tabId === 'vocab') initFlashcard();
             if(tabId === 'quiz') showQuizStartScreen();
             if(tabId === 'blankquiz') newBlankQuestion();
-            if(tabId === 'library') renderWordList();
+            if(tabId === 'speaking') initSpeakingTab();
+            if(tabId === 'library') { renderWordList(); renderSpeakingManageList(); }
             if(tabId === 'dashboard') renderDashboard();
+            if(tabId !== 'speaking') stopSpeakingRecognition();
         }
 
         function renderDashboard() {
@@ -816,6 +936,24 @@
 
             const activePanel = document.querySelector('.panel.active');
             if(activePanel && activePanel.id === 'panel-blankquiz') newBlankQuestion();
+        }
+
+        // Day1~40 선택 드롭다운은 말하기 탭과 설정 탭(문장 관리)이 함께 씀 — 하나만 있는 activeSpeakingDayId를 공유
+        function populateSpeakingDaySelectors() {
+            document.querySelectorAll('.speaking-day-select').forEach(sel => {
+                sel.innerHTML = speakingDays.map(d => `<option value="${d.id}" ${d.id===activeSpeakingDayId?'selected':''}>${escapeHtml(d.name)} (${d.sentences.length}문장)</option>`).join('');
+            });
+        }
+
+        function changeSpeakingDay(id) {
+            if(!id || id === activeSpeakingDayId) return;
+            activeSpeakingDayId = id;
+            saveActiveSpeakingDayId();
+            populateSpeakingDaySelectors();
+
+            const activePanel = document.querySelector('.panel.active');
+            if(activePanel && activePanel.id === 'panel-speaking') initSpeakingTab();
+            if(activePanel && activePanel.id === 'panel-library') renderSpeakingManageList();
         }
 
         // Flashcards Logic — 암기 완료(Lv.3 이상) 단어는 목록에서 제외
@@ -1343,6 +1481,177 @@
         });
 
         // ==================================================================
+        // 말하기(Speaking) 로직 — Day 안의 문장을 한글로 보여주고, 브라우저 내장 음성 인식(Web
+        // Speech API)으로 내가 말한 영어를 받아써서 목표 문장과 단어 단위로 비교해 채점함.
+        // (실제 발음/억양 평가가 아니라 "인식된 텍스트 vs 목표 문장" 유사도 기반 근사 채점입니다)
+        // ==================================================================
+        let speakSentenceIndex = 0;
+
+        function getSpeakingPool() {
+            return getActiveSpeakingDay().sentences;
+        }
+
+        function initSpeakingTab() {
+            stopSpeakingRecognition();
+            const pool = getSpeakingPool();
+            if(speakSentenceIndex >= pool.length) speakSentenceIndex = 0;
+            renderSpeakingSentence();
+        }
+
+        function renderSpeakingSentence() {
+            const pool = getSpeakingPool();
+            const micBtn = document.getElementById("speak-mic-btn");
+            document.getElementById("speak-result-area").classList.add("hidden");
+
+            if(pool.length === 0) {
+                document.getElementById("speak-progress-text").textContent = "0 / 0";
+                document.getElementById("speak-ko-sentence").textContent = "이 Day에는 아직 문장이 없어요";
+                document.getElementById("speak-status-text").textContent = "설정 탭에서 말하기 문장을 먼저 추가해주세요";
+                micBtn.disabled = true;
+                micBtn.classList.add("opacity-40");
+                return;
+            }
+            micBtn.disabled = false;
+            micBtn.classList.remove("opacity-40");
+
+            if(speakSentenceIndex >= pool.length) speakSentenceIndex = 0;
+            const item = pool[speakSentenceIndex];
+            document.getElementById("speak-progress-text").textContent = `${speakSentenceIndex + 1} / ${pool.length}`;
+            document.getElementById("speak-ko-sentence").textContent = item.ko;
+            document.getElementById("speak-status-text").textContent = "마이크 버튼을 눌러 말해보세요";
+        }
+
+        function moveSpeakingSentence(delta) {
+            stopSpeakingRecognition();
+            const pool = getSpeakingPool();
+            if(pool.length === 0) return;
+            speakSentenceIndex = (speakSentenceIndex + delta + pool.length) % pool.length;
+            renderSpeakingSentence();
+        }
+        document.getElementById("speak-prev-btn").addEventListener("click", () => moveSpeakingSentence(-1));
+        document.getElementById("speak-next-btn").addEventListener("click", () => moveSpeakingSentence(1));
+
+        // 채점용 토큰화: 소문자로 바꾸고 구두점을 제거해 단어만 남김
+        function tokenizeForScoring(text) {
+            return (text || '').toLowerCase().replace(/[^a-z0-9\s']/g, '').split(/\s+/).filter(Boolean);
+        }
+
+        // 목표 문장과 내가 말한 문장을 단어 단위로 비교 — LCS(최장 공통 부분수열)로 순서가 좀
+        // 달라도 맞은 단어를 최대한 찾아내고, 목표 문장 단어 수 대비 맞은 비율을 점수로 씀
+        function scoreSpeaking(targetText, recognizedText) {
+            const targetWords = tokenizeForScoring(targetText);
+            const saidWords = tokenizeForScoring(recognizedText);
+            const n = targetWords.length, m = saidWords.length;
+            const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+            for(let i = 1; i <= n; i++) {
+                for(let j = 1; j <= m; j++) {
+                    dp[i][j] = (targetWords[i - 1] === saidWords[j - 1])
+                        ? dp[i - 1][j - 1] + 1
+                        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+            const matched = new Array(n).fill(false);
+            let i = n, j = m;
+            while(i > 0 && j > 0) {
+                if(targetWords[i - 1] === saidWords[j - 1]) { matched[i - 1] = true; i--; j--; }
+                else if(dp[i - 1][j] >= dp[i][j - 1]) i--;
+                else j--;
+            }
+            const correctCount = matched.filter(Boolean).length;
+            const percent = n > 0 ? Math.round((correctCount / n) * 100) : 0;
+            return { targetWords, matched, percent };
+        }
+
+        function speakingScoreMessage(percent) {
+            if(percent >= 90) return "완벽해요! 🎉";
+            if(percent >= 70) return "거의 다 왔어요!";
+            if(percent >= 50) return "조금 더 연습해봐요";
+            return "다시 도전해봐요!";
+        }
+
+        function handleSpeakingResult(transcript) {
+            const pool = getSpeakingPool();
+            if(pool.length === 0) return;
+            const item = pool[speakSentenceIndex];
+            const { targetWords, matched, percent } = scoreSpeaking(item.en, transcript);
+
+            document.getElementById("speak-status-text").textContent = "인식이 완료됐어요. 결과를 확인해보세요.";
+            document.getElementById("speak-recognized-text").textContent = `"${transcript}"`;
+
+            const html = targetWords.map((w, idx) => {
+                const cls = matched[idx] ? 'speak-word-correct' : 'speak-word-wrong';
+                return `<span class="${cls}">${escapeHtml(w)}</span>`;
+            }).join(' ');
+            document.getElementById("speak-result-sentence").innerHTML = html || escapeHtml(item.en);
+
+            document.getElementById("speak-score-badge").textContent = `스피킹 정확도 ${percent}점 · ${speakingScoreMessage(percent)}`;
+            document.getElementById("speak-result-area").classList.remove("hidden");
+        }
+
+        // 브라우저 내장 음성 인식(Web Speech API) — Chrome 계열에서 잘 동작하며,
+        // 지원하지 않는 브라우저(일부 Safari 등)에서는 안내 후 사용 불가
+        const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let speakRecognition = null;
+        let isSpeakingRecording = false;
+
+        function stopSpeakingRecognition() {
+            if(speakRecognition && isSpeakingRecording) {
+                try { speakRecognition.stop(); } catch(err) {}
+            }
+            isSpeakingRecording = false;
+            const micBtn = document.getElementById("speak-mic-btn");
+            if(micBtn) micBtn.classList.remove("recording");
+        }
+
+        document.getElementById("speak-mic-btn").addEventListener("click", async () => {
+            const pool = getSpeakingPool();
+            if(pool.length === 0) return;
+
+            if(!SpeechRecognitionCtor) {
+                await showAlert("이 브라우저는 음성 인식을 지원하지 않아요. 안드로이드/PC의 Chrome 브라우저에서 이용해주세요.");
+                return;
+            }
+            if(isSpeakingRecording) { stopSpeakingRecognition(); return; }
+
+            if(!speakRecognition) {
+                speakRecognition = new SpeechRecognitionCtor();
+                speakRecognition.lang = 'en-US';
+                speakRecognition.interimResults = false;
+                speakRecognition.maxAlternatives = 1;
+                speakRecognition.onresult = (e) => {
+                    handleSpeakingResult(e.results[0][0].transcript);
+                };
+                speakRecognition.onerror = (e) => {
+                    isSpeakingRecording = false;
+                    document.getElementById("speak-mic-btn").classList.remove("recording");
+                    if(e.error === 'no-speech') {
+                        document.getElementById("speak-status-text").textContent = "목소리를 못 들었어요. 마이크를 다시 눌러 말해보세요.";
+                    } else if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                        document.getElementById("speak-status-text").textContent = "마이크 권한을 허용해야 사용할 수 있어요.";
+                    } else {
+                        document.getElementById("speak-status-text").textContent = "음성 인식 중 오류가 발생했어요. 다시 시도해주세요.";
+                    }
+                };
+                speakRecognition.onend = () => {
+                    isSpeakingRecording = false;
+                    document.getElementById("speak-mic-btn").classList.remove("recording");
+                };
+            }
+
+            document.getElementById("speak-result-area").classList.add("hidden");
+            document.getElementById("speak-status-text").textContent = "듣고 있어요... 🎤";
+            isSpeakingRecording = true;
+            document.getElementById("speak-mic-btn").classList.add("recording");
+            try {
+                speakRecognition.start();
+            } catch(err) {
+                isSpeakingRecording = false;
+                document.getElementById("speak-mic-btn").classList.remove("recording");
+                document.getElementById("speak-status-text").textContent = "마이크를 시작하지 못했어요. 다시 시도해주세요.";
+            }
+        });
+
+        // ==================================================================
         // Library & Settings — 단어 목록(선택된 단어장)
         // ==================================================================
         function renderWordList() {
@@ -1462,6 +1771,7 @@
                 exportedAt: new Date().toISOString(),
                 wordBooks, activeWordBookId,
                 readingBooks, activeReadingBookId,
+                speakingDays, activeSpeakingDayId,
                 stats, userGoals, bqStats, progress,
                 masteredWords: [...masteredWordSet]
             };
@@ -1482,6 +1792,11 @@
                 activeReadingBookId = data.activeReadingBookId && readingBooks.find(b => b.id === data.activeReadingBookId)
                     ? data.activeReadingBookId : readingBooks[0].id;
             }
+            if(data.speakingDays && Array.isArray(data.speakingDays) && data.speakingDays.length === 40) {
+                speakingDays = data.speakingDays;
+                activeSpeakingDayId = data.activeSpeakingDayId && speakingDays.find(d => d.id === data.activeSpeakingDayId)
+                    ? data.activeSpeakingDayId : speakingDays[0].id;
+            }
             if(data.stats) stats = data.stats;
             if(data.userGoals) userGoals = data.userGoals;
             if(data.bqStats) bqStats = data.bqStats;
@@ -1490,6 +1805,7 @@
 
             saveWordBooks(); saveActiveWordBookId();
             saveReadingBooks(); saveActiveReadingBookId();
+            saveSpeakingDays(); saveActiveSpeakingDayId();
             saveStats(stats); saveGoals(userGoals); saveBQStats(bqStats); saveProgress(progress); saveMasteredWordSet();
 
             words = getActiveWordBook().words;
@@ -1499,7 +1815,9 @@
 
             populateWordBookSelectors();
             populateReadingBookSelectors();
+            populateSpeakingDaySelectors();
             renderWordList();
+            renderSpeakingManageList();
             renderDashboard();
             updateQuizScoreDisplay();
             updateBQScore();
@@ -1865,6 +2183,108 @@
             reader.readAsText(file, 'utf-8');
         });
 
+        // ==================================================================
+        // 말하기 문장 관리 (Day는 고정 40개 슬롯 — 안의 문장만 추가/가져오기/전체삭제)
+        // ==================================================================
+        function renderSpeakingManageList() {
+            const container = document.getElementById("speaking-manage-list");
+            if(!container) return;
+            const day = getActiveSpeakingDay();
+
+            if(day.sentences.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-textMuted text-xs">이 Day에 등록된 문장이 없습니다.</div>`;
+                return;
+            }
+
+            container.innerHTML = "";
+            day.sentences.forEach((s) => {
+                const item = document.createElement("div");
+                item.className = "bg-cardGray border border-divider rounded-xl p-3 flex justify-between items-start gap-2";
+                item.innerHTML = `
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-textDark break-words">${escapeHtml(s.ko)}</div>
+                        <div class="text-[11px] text-primary mt-0.5 break-words">${escapeHtml(s.en)}</div>
+                    </div>
+                    <button class="text-textMuted hover:text-red-500 p-1 text-sm shrink-0 delete-speaking-btn"><i class="fa-solid fa-trash-can"></i></button>
+                `;
+                item.querySelector(".delete-speaking-btn").addEventListener("click", () => {
+                    day.sentences = day.sentences.filter(item2 => item2.id !== s.id);
+                    saveSpeakingDays();
+                    renderSpeakingManageList();
+                    populateSpeakingDaySelectors();
+                });
+                renderIcons(item);
+                container.appendChild(item);
+            });
+        }
+
+        document.getElementById("add-speaking-sentence-btn").addEventListener("click", () => {
+            document.getElementById("add-speaking-modal").style.display = "flex";
+        });
+        document.getElementById("close-speaking-modal-btn").addEventListener("click", () => {
+            document.getElementById("add-speaking-modal").style.display = "none";
+        });
+        document.getElementById("save-new-speaking-btn").addEventListener("click", async () => {
+            const koVal = document.getElementById("new-speaking-ko-input").value.trim();
+            const enVal = document.getElementById("new-speaking-en-input").value.trim();
+            if(!koVal || !enVal) {
+                await showAlert("한글 문장과 영어 문장을 모두 입력해주세요.");
+                return;
+            }
+            getActiveSpeakingDay().sentences.push({ id: uid(), ko: koVal, en: enVal });
+            saveSpeakingDays();
+            document.getElementById("new-speaking-ko-input").value = "";
+            document.getElementById("new-speaking-en-input").value = "";
+            document.getElementById("add-speaking-modal").style.display = "none";
+            renderSpeakingManageList();
+            populateSpeakingDaySelectors();
+        });
+
+        document.getElementById("clear-speaking-day-btn").addEventListener("click", async () => {
+            const day = getActiveSpeakingDay();
+            if(day.sentences.length === 0) { await showAlert("이미 비어있는 Day입니다."); return; }
+            if(!(await showConfirm(`'${day.name}'의 문장 ${day.sentences.length}개를 모두 삭제할까요?`))) return;
+            day.sentences = [];
+            saveSpeakingDays();
+            renderSpeakingManageList();
+            populateSpeakingDaySelectors();
+        });
+
+        // ko/en(또는 한글/영어) 키를 가진 JSON 배열 텍스트를 파싱
+        function parseSpeakingFile(text) {
+            const data = JSON.parse(text.replace(/^﻿/, ''));
+            if(!Array.isArray(data)) throw new Error("JSON 배열([]) 형식이어야 합니다.");
+            return data.map(item => ({
+                id: uid(),
+                ko: String(item.ko ?? item['한글'] ?? item.korean ?? "").trim(),
+                en: String(item.en ?? item['영어'] ?? item.english ?? "").trim()
+            })).filter(s => s.ko && s.en);
+        }
+
+        document.getElementById("import-speaking-btn").addEventListener("click", () => {
+            document.getElementById("speaking-file-input").click();
+        });
+        document.getElementById("speaking-file-input").addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const parsed = parseSpeakingFile(ev.target.result);
+                    if(parsed.length === 0) { await showAlert("가져올 문장을 찾지 못했습니다. 파일 형식을 확인해주세요."); return; }
+                    getActiveSpeakingDay().sentences.push(...parsed);
+                    saveSpeakingDays();
+                    renderSpeakingManageList();
+                    populateSpeakingDaySelectors();
+                    await showAlert(`'${getActiveSpeakingDay().name}'에 ${parsed.length}개 문장을 추가했습니다.`);
+                } catch(err) {
+                    await showAlert("파일을 읽는 중 오류가 발생했습니다: " + err.message);
+                }
+                e.target.value = "";
+            };
+            reader.readAsText(file, 'utf-8');
+        });
+
         // 대량 업로드용 예시 템플릿 다운로드
         function downloadTemplate(type) {
             let content, filename, mime;
@@ -1883,6 +2303,12 @@
                     c: ["정답이 되는 보기", "오답 보기 2", "오답 보기 3", "오답 보기 4", "오답 보기 5"]
                 }], null, 2);
                 filename = "독해_템플릿.json"; mime = "application/json;charset=utf-8";
+            } else if(type === 'speaking-json') {
+                content = JSON.stringify([
+                    { ko: "토요일에는 늦잠을 자고 싶었어요.", en: "I wanted to sleep in on Saturday." },
+                    { ko: "대신 러닝을 하러 가기로 했어요.", en: "I chose to go running instead." }
+                ], null, 2);
+                filename = "말하기_템플릿.json"; mime = "application/json;charset=utf-8";
             } else { return; }
 
             const blob = new Blob(["\uFEFF" + content], { type: mime });
@@ -1896,10 +2322,12 @@
         document.getElementById("download-word-json-btn").addEventListener("click", () => downloadTemplate('word-json'));
         document.getElementById("download-word-csv-btn").addEventListener("click", () => downloadTemplate('word-csv'));
         document.getElementById("download-reading-json-btn").addEventListener("click", () => downloadTemplate('reading-json'));
+        document.getElementById("download-speaking-json-btn").addEventListener("click", () => downloadTemplate('speaking-json'));
 
         // Initialize First View
         populateWordBookSelectors();
         populateReadingBookSelectors();
+        populateSpeakingDaySelectors();
         renderDashboard();
         updateQuizScoreDisplay();
 
@@ -1925,7 +2353,10 @@
             'chevron-down': '<polyline points="6 9 12 15 18 9"/>',
             'xmark': '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
             'triangle-exclamation': '<path d="M12 2 L22 20 H2 Z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>',
-            'trash-can': '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>'
+            'trash-can': '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+            'microphone': '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
+            'chevron-left': '<polyline points="15 18 9 12 15 6"/>',
+            'chevron-right': '<polyline points="9 18 15 12 9 6"/>'
         };
         const ICON_SIZE_MAP = {
             'text-[11px]': 11, 'text-[13px]': 13, 'text-xs': 12, 'text-sm': 14,
