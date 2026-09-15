@@ -298,8 +298,9 @@
                         <p id="speak-episode-title" class="text-sm font-bold text-primary mt-2"></p>
 
                         <div class="flex bg-cardGray rounded-xl p-1 mt-3">
-                            <button id="speak-mode-sentence-btn" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">문장별로 말하기</button>
-                            <button id="speak-mode-episode-btn" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">에피소드 전체 말하기</button>
+                            <button id="speak-mode-sentence-btn" class="flex-1 py-2 rounded-lg text-[11px] font-bold transition-colors">문장별로 말하기</button>
+                            <button id="speak-mode-episode-btn" class="flex-1 py-2 rounded-lg text-[11px] font-bold transition-colors">에피소드 전체 말하기</button>
+                            <button id="speak-mode-write-btn" class="flex-1 py-2 rounded-lg text-[11px] font-bold transition-colors">문장 만들기</button>
                         </div>
                     </div>
 
@@ -311,7 +312,7 @@
 
                         <div id="speak-status-text" class="text-center text-xs text-textMuted min-h-[16px] mb-2">설정 탭에서 말하기 문장을 먼저 추가해주세요</div>
 
-                        <div class="flex items-center justify-center gap-6 mt-4">
+                        <div id="speak-record-controls" class="flex items-center justify-center gap-6 mt-4">
                             <button id="speak-prev-btn" class="w-10 h-10 rounded-full bg-cardGray flex items-center justify-center text-textMuted active:scale-95 transition-transform">
                                 <i class="fa-solid fa-chevron-left"></i>
                             </button>
@@ -323,13 +324,18 @@
                             </button>
                         </div>
 
+                        <div id="speak-write-area" class="hidden mt-4">
+                            <textarea id="speak-write-input" rows="3" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-3 text-sm font-medium text-textDark resize-none" placeholder="한글 해석을 보고 영어로 입력해보세요..."></textarea>
+                            <button id="speak-write-submit-btn" class="w-full mt-3 bg-primary text-white font-bold py-3 rounded-xl shadow-md shadow-primary/30 active:scale-95 transition-transform">채점하기</button>
+                        </div>
+
                         <button id="speak-listen-btn" class="w-full mt-4 bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-volume-high"></i> 원어민 발음 듣기
                         </button>
                     </div>
 
                     <div id="speak-result-area" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card">
-                        <div class="text-xs font-bold text-textMuted mb-1">내가 말한 문장</div>
+                        <div class="text-xs font-bold text-textMuted mb-1" id="speak-result-label">내가 말한 문장</div>
                         <p id="speak-recognized-text" class="text-sm text-textMuted mb-3"></p>
                         <div class="text-xs font-bold text-textMuted mb-2">목표 문장 <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span></div>
                         <p id="speak-result-sentence" class="text-lg leading-relaxed text-textDark mb-4"></p>
@@ -660,7 +666,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.8.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.9.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1610,10 +1616,16 @@
 
         // 지금 연습 대상 텍스트 — 문장별 모드면 현재 문장 하나, 에피소드 모드면 에피소드
         // 전체 문장을 이어붙인 문단 전체를 돌려줌 (녹음 채점/원어민 발음 듣기가 공통으로 사용)
+        // 에피소드 전체 말하기 모드와 문장 만들기 모드는 둘 다 에피소드 전체(모든 문장을 이어붙인
+        // 문단)를 연습 대상으로 삼음 — 문장별 모드만 지금 고른 문장 하나를 대상으로 함
+        function isWholeEpisodeMode() {
+            return speakMode === 'episode' || speakMode === 'write';
+        }
+
         function getCurrentSpeakingTarget() {
             const episode = getCurrentSpeakingEpisode();
             if(!episode || episode.sentences.length === 0) return null;
-            if(speakMode === 'episode') {
+            if(isWholeEpisodeMode()) {
                 return {
                     ko: episode.sentences.map(s => s.ko).join(' '),
                     en: episode.sentences.map(s => s.en).join(' ')
@@ -1623,10 +1635,10 @@
         }
 
         // 지금 연습 대상을 이루는 원본 문장들 — 문장별 모드는 현재 문장 1개,
-        // 에피소드 모드는 그 에피소드의 모든 문장. 결과 화면에서 문장 단위로 나눠 보여주고
-        // 클릭하면 그 문장만 다시 들을 수 있게 하는 데 씀
+        // 에피소드 모드/문장 만들기 모드는 그 에피소드의 모든 문장. 결과 화면에서 문장 단위로
+        // 나눠 보여주고 클릭하면 그 문장만 다시 들을 수 있게 하는 데 씀
         function getTargetSentenceGroups() {
-            if(speakMode === 'episode') {
+            if(isWholeEpisodeMode()) {
                 const episode = getCurrentSpeakingEpisode();
                 return episode ? episode.sentences : [];
             }
@@ -1645,16 +1657,19 @@
             renderSpeakingSentence();
         }
 
-        // 문장별 말하기 / 에피소드 전체 말하기 모드 전환 버튼 UI 갱신
+        // 문장별 말하기 / 에피소드 전체 말하기 / 문장 만들기 모드 전환 버튼 UI 갱신
         function renderSpeakModeToggle() {
-            const sentenceBtn = document.getElementById("speak-mode-sentence-btn");
-            const episodeBtn = document.getElementById("speak-mode-episode-btn");
             const activeCls = ["bg-white", "text-primary", "shadow-sm"];
             const inactiveCls = ["text-textMuted"];
-            sentenceBtn.classList.remove(...activeCls, ...inactiveCls);
-            episodeBtn.classList.remove(...activeCls, ...inactiveCls);
-            sentenceBtn.classList.add(...(speakMode === 'sentence' ? activeCls : inactiveCls));
-            episodeBtn.classList.add(...(speakMode === 'episode' ? activeCls : inactiveCls));
+            const btnByMode = {
+                sentence: document.getElementById("speak-mode-sentence-btn"),
+                episode: document.getElementById("speak-mode-episode-btn"),
+                write: document.getElementById("speak-mode-write-btn")
+            };
+            Object.entries(btnByMode).forEach(([mode, btn]) => {
+                btn.classList.remove(...activeCls, ...inactiveCls);
+                btn.classList.add(...(speakMode === mode ? activeCls : inactiveCls));
+            });
         }
 
         function changeSpeakMode(mode) {
@@ -1667,6 +1682,7 @@
         }
         document.getElementById("speak-mode-sentence-btn").addEventListener("click", () => changeSpeakMode('sentence'));
         document.getElementById("speak-mode-episode-btn").addEventListener("click", () => changeSpeakMode('episode'));
+        document.getElementById("speak-mode-write-btn").addEventListener("click", () => changeSpeakMode('write'));
 
         // Day 안의 에피소드를 1,2,3... 번호 칩으로 렌더링 — 클릭하면 그 에피소드로 이동
         function renderEpisodeChips() {
@@ -1714,11 +1730,18 @@
             const listenBtn = document.getElementById("speak-listen-btn");
             const prevBtn = document.getElementById("speak-prev-btn");
             const nextBtn = document.getElementById("speak-next-btn");
+            const recordControls = document.getElementById("speak-record-controls");
+            const writeArea = document.getElementById("speak-write-area");
+            const writeInput = document.getElementById("speak-write-input");
             document.getElementById("speak-result-area").classList.add("hidden");
 
-            // 문장별 모드에서만 이전/다음 버튼 표시 (에피소드 전체 모드는 이동할 문장이 따로 없음)
-            prevBtn.classList.toggle("invisible", speakMode === 'episode');
-            nextBtn.classList.toggle("invisible", speakMode === 'episode');
+            // 문장 만들기 모드는 마이크 대신 입력창을 보여줌. 문장별 모드에서만 이전/다음
+            // 버튼 표시 (에피소드 전체/문장 만들기 모드는 이동할 문장이 따로 없음)
+            recordControls.classList.toggle("hidden", speakMode === 'write');
+            writeArea.classList.toggle("hidden", speakMode !== 'write');
+            prevBtn.classList.toggle("invisible", isWholeEpisodeMode());
+            nextBtn.classList.toggle("invisible", isWholeEpisodeMode());
+            if(speakMode === 'write') writeInput.value = "";
 
             if(getSpeakingEpisodes().length === 0) {
                 document.getElementById("speak-progress-text").textContent = "0 / 0";
@@ -1747,18 +1770,20 @@
 
             if(speakSentenceIndex >= pool.length) speakSentenceIndex = 0;
             const target = getCurrentSpeakingTarget();
-            if(speakMode === 'episode') {
+            if(isWholeEpisodeMode()) {
                 document.getElementById("speak-progress-text").textContent = "에피소드 전체";
             } else {
                 document.getElementById("speak-progress-text").textContent = `${speakSentenceIndex + 1} / ${pool.length}`;
             }
             document.getElementById("speak-ko-sentence").textContent = target.ko;
-            document.getElementById("speak-status-text").textContent = "마이크 버튼을 눌러 말해보세요";
+            document.getElementById("speak-status-text").textContent = speakMode === 'write'
+                ? "한글 해석을 보고 영어로 입력한 뒤 채점하기를 눌러보세요"
+                : "마이크 버튼을 눌러 말해보세요";
             updateListenButtonUI();
         }
 
         function moveSpeakingSentence(delta) {
-            if(speakMode !== 'sentence') return; // 에피소드 전체 모드에서는 문장 이동 없음
+            if(speakMode !== 'sentence') return; // 에피소드 전체/문장 만들기 모드에서는 문장 이동 없음
             stopSpeakingRecognition();
             stopSpeakingSynthesis();
             const pool = getSpeakingPool();
@@ -1768,6 +1793,21 @@
         }
         document.getElementById("speak-prev-btn").addEventListener("click", () => moveSpeakingSentence(-1));
         document.getElementById("speak-next-btn").addEventListener("click", () => moveSpeakingSentence(1));
+
+        // 문장 만들기 모드 — 마이크 대신 직접 타이핑한 영어를 목표 문장과 채점 (녹음 결과와
+        // 동일한 채점/결과 화면 로직을 그대로 재사용함)
+        document.getElementById("speak-write-submit-btn").addEventListener("click", async () => {
+            const target = getCurrentSpeakingTarget();
+            if(!target) return;
+            const typed = document.getElementById("speak-write-input").value.trim();
+            if(!typed) {
+                await showAlert("영어 문장을 입력해주세요.");
+                return;
+            }
+            stopSpeakingRecognition();
+            stopSpeakingSynthesis();
+            handleSpeakingResult(typed);
+        });
 
         // 원어민 발음 듣기 — 브라우저 내장 음성 합성(Web Speech API SpeechSynthesis)으로
         // 지금 연습 대상(문장 또는 에피소드 전체, 혹은 결과 화면에서 탭한 문장 하나)의
@@ -1878,7 +1918,10 @@
             if(!target) return;
             const { targetDisplay, matched, percent } = scoreSpeaking(target.en, transcript);
 
-            document.getElementById("speak-status-text").textContent = "인식이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 그 문장만 다시 들을 수 있어요)";
+            document.getElementById("speak-status-text").textContent = speakMode === 'write'
+                ? "채점이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 그 문장을 들을 수 있어요)"
+                : "인식이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 그 문장만 다시 들을 수 있어요)";
+            document.getElementById("speak-result-label").textContent = speakMode === 'write' ? "내가 입력한 문장" : "내가 말한 문장";
             document.getElementById("speak-recognized-text").textContent = `"${transcript}"`;
 
             // 원문 그대로(마침표·대소문자 유지)의 단어들을 원래 문장 경계대로 다시 묶어서,
