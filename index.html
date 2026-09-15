@@ -334,6 +334,7 @@
                         </div>
 
                         <div id="speak-write-area">
+                            <p id="speak-write-ko-hint" class="text-sm font-bold text-textDark bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 mb-2 leading-relaxed"></p>
                             <textarea id="speak-write-input" rows="3" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-3 text-sm font-medium text-textDark resize-none" placeholder="한글 해석을 보고 영어로 입력해보세요..."></textarea>
                             <button id="speak-write-submit-btn" class="w-full mt-3 bg-primary text-white font-bold py-3 rounded-xl shadow-md shadow-primary/30 active:scale-95 transition-transform">채점하기</button>
                         </div>
@@ -671,7 +672,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.9.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.9.2"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1782,6 +1783,7 @@
                 document.getElementById("speak-progress-text").textContent = `${speakSentenceIndex + 1} / ${pool.length}`;
             }
             document.getElementById("speak-ko-sentence").textContent = target.ko;
+            document.getElementById("speak-write-ko-hint").textContent = target.ko; // 키보드에 위쪽 문장이 가려질 때를 대비해 입력창 바로 위에도 한 번 더 표시
             document.getElementById("speak-status-text").textContent = "마이크로 말하거나 아래에 직접 입력해서 연습해보세요";
             updateListenButtonUI();
         }
@@ -1812,6 +1814,15 @@
             stopSpeakingRecognition();
             stopSpeakingSynthesis();
             handleSpeakingResult(typed, 'typed');
+        });
+
+        // 입력창을 탭하면 모바일 키보드가 올라오면서 위쪽 한글 문장이 화면 밖으로 밀려날 수
+        // 있어서, 입력창(과 바로 위에 반복 표시된 한글 힌트)이 화면에 확실히 보이도록 스크롤함
+        // (키보드가 다 올라온 뒤에 위치를 계산해야 정확해서 약간의 지연을 둠)
+        document.getElementById("speak-write-input").addEventListener("focus", () => {
+            setTimeout(() => {
+                document.getElementById("speak-write-ko-hint").scrollIntoView({ block: "center", behavior: "smooth" });
+            }, 300);
         });
 
         // 원어민 발음 듣기 — 브라우저 내장 음성 합성(Web Speech API SpeechSynthesis)으로
