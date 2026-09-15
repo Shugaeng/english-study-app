@@ -542,11 +542,6 @@
                         <label class="text-xs text-textMuted font-medium block mb-1">영어 전체 문단 (채점 기준, 마침표 기준으로 자동 분리됨)</label>
                         <textarea id="new-speaking-en-input" rows="3" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I wanted to sleep in on Saturday. I chose to go running instead."></textarea>
                     </div>
-                    <div>
-                        <label class="text-xs text-textMuted font-medium block mb-1">원어민 mp3 파일 경로 (선택)</label>
-                        <input type="text" id="new-speaking-audio-input" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark" placeholder="예: audio/day1/ep1.mp3">
-                        <p class="text-[10px] text-textMuted mt-1">비워두면 에피소드 전체 듣기 시 합성 음성(TTS)으로 대신 재생돼요.</p>
-                    </div>
                 </div>
                 <div class="flex gap-2">
                     <button id="close-speaking-modal-btn" class="flex-1 bg-cardGray text-textMuted font-bold py-3 rounded-xl text-sm">취소</button>
@@ -657,7 +652,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.8.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.7.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -712,10 +707,8 @@
         }
 
         // 한글 전체 문단과 영어 전체 문단을 각각 문장으로 나눈 뒤, 순서대로 짝지어
-        // 하나의 에피소드({id, title, sentences, audio})를 만듦. 문장 수가 안 맞으면 짧은 쪽 기준으로만 짝지음
-        // audio: 교재 원어민 mp3 파일의 상대경로(선택) — 있으면 에피소드 전체 모드에서 듣기 버튼이
-        // 합성음 대신 이 실제 음성 파일을 재생함
-        function buildSpeakingEpisode(title, koParagraph, enParagraph, audioUrl) {
+        // 하나의 에피소드({id, title, sentences})를 만듦. 문장 수가 안 맞으면 짧은 쪽 기준으로만 짝지음
+        function buildSpeakingEpisode(title, koParagraph, enParagraph) {
             const koSentences = splitIntoSentences(koParagraph);
             const enSentences = splitIntoSentences(enParagraph);
             const n = Math.min(koSentences.length, enSentences.length);
@@ -723,13 +716,7 @@
             for(let i = 0; i < n; i++) {
                 sentences.push({ id: uid(), ko: koSentences[i], en: enSentences[i] });
             }
-            return {
-                id: uid(),
-                title: (title || '').trim() || '제목 없는 에피소드',
-                sentences,
-                audio: (audioUrl || '').trim() || null,
-                mismatched: koSentences.length !== enSentences.length
-            };
+            return { id: uid(), title: (title || '').trim() || '제목 없는 에피소드', sentences, mismatched: koSentences.length !== enSentences.length };
         }
 
         // ==================================================================
@@ -1747,11 +1734,6 @@
             }
             document.getElementById("speak-ko-sentence").textContent = target.ko;
             document.getElementById("speak-status-text").textContent = "마이크 버튼을 눌러 말해보세요";
-
-            listenBtn.innerHTML = getCurrentEpisodeAudioUrl()
-                ? '<i class="fa-solid fa-headphones"></i> 원어민 음성 듣기'
-                : '<i class="fa-solid fa-volume-high"></i> 원어민 발음 듣기 (합성 음성)';
-            renderIcons(listenBtn);
         }
 
         function moveSpeakingSentence(delta) {
@@ -1766,41 +1748,21 @@
         document.getElementById("speak-prev-btn").addEventListener("click", () => moveSpeakingSentence(-1));
         document.getElementById("speak-next-btn").addEventListener("click", () => moveSpeakingSentence(1));
 
-        // 원어민 발음 듣기 — 에피소드에 실제 mp3(원어민 녹음)가 연결돼 있으면 그걸 재생하고,
-        // 없으면 브라우저 내장 음성 합성(Web Speech API SpeechSynthesis)으로 대신 읽어줌
-        let speakAudioPlayer = null;
-
+        // 원어민 발음 듣기 — 브라우저 내장 음성 합성(Web Speech API SpeechSynthesis)으로
+        // 지금 연습 대상(문장 또는 에피소드 전체)의 영어 텍스트를 읽어줌
         function stopSpeakingSynthesis() {
             if('speechSynthesis' in window) window.speechSynthesis.cancel();
-            if(speakAudioPlayer) { speakAudioPlayer.pause(); speakAudioPlayer.currentTime = 0; }
-        }
-
-        // 에피소드 전체 모드이고 그 에피소드에 mp3가 연결돼 있을 때만 실제 음성 파일 사용 가능
-        function getCurrentEpisodeAudioUrl() {
-            if(speakMode !== 'episode') return null;
-            const episode = getCurrentSpeakingEpisode();
-            return episode ? episode.audio : null;
         }
 
         document.getElementById("speak-listen-btn").addEventListener("click", async () => {
-            const target = getCurrentSpeakingTarget();
-            if(!target) return;
-            stopSpeakingRecognition();
-            stopSpeakingSynthesis();
-
-            const audioUrl = getCurrentEpisodeAudioUrl();
-            if(audioUrl) {
-                speakAudioPlayer = new Audio(audioUrl);
-                speakAudioPlayer.play().catch(async () => {
-                    await showAlert("원어민 음성 파일을 재생하지 못했어요. 파일 경로를 확인해주세요: " + audioUrl);
-                });
-                return;
-            }
-
             if(!('speechSynthesis' in window)) {
                 await showAlert("이 브라우저는 음성 합성(듣기 기능)을 지원하지 않아요.");
                 return;
             }
+            const target = getCurrentSpeakingTarget();
+            if(!target) return;
+            stopSpeakingRecognition();
+            stopSpeakingSynthesis();
             const utter = new SpeechSynthesisUtterance(target.en);
             utter.lang = 'en-US';
             utter.rate = 0.95;
@@ -2506,7 +2468,7 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-center gap-2">
-                        <div class="text-xs font-bold text-textDark break-words min-w-0">${epIdx + 1}. ${escapeHtml(ep.title)} ${ep.audio ? '<span class="text-[10px] font-normal text-emerald-600">🎧 mp3 연결됨</span>' : ''}</div>
+                        <div class="text-xs font-bold text-textDark break-words min-w-0">${epIdx + 1}. ${escapeHtml(ep.title)}</div>
                         <div class="flex items-center gap-1 shrink-0">
                             <button class="text-[11px] font-semibold text-primary px-2 py-1 rename-speaking-episode-btn">이름변경</button>
                             <button class="text-textMuted hover:text-red-500 p-1 text-sm delete-speaking-episode-btn"><i class="fa-solid fa-trash-can"></i></button>
@@ -2548,7 +2510,6 @@
             document.getElementById("new-speaking-title-input").value = "";
             document.getElementById("new-speaking-ko-input").value = "";
             document.getElementById("new-speaking-en-input").value = "";
-            document.getElementById("new-speaking-audio-input").value = "";
             document.getElementById("add-speaking-modal").style.display = "flex";
         });
         document.getElementById("close-speaking-modal-btn").addEventListener("click", () => {
@@ -2558,12 +2519,11 @@
             const titleVal = document.getElementById("new-speaking-title-input").value.trim();
             const koVal = document.getElementById("new-speaking-ko-input").value.trim();
             const enVal = document.getElementById("new-speaking-en-input").value.trim();
-            const audioVal = document.getElementById("new-speaking-audio-input").value.trim();
             if(!koVal || !enVal) {
                 await showAlert("한글 문단과 영어 문단을 모두 입력해주세요.");
                 return;
             }
-            const episode = buildSpeakingEpisode(titleVal || `[${getActiveSpeakingDay().episodes.length + 1}] 새 에피소드`, koVal, enVal, audioVal);
+            const episode = buildSpeakingEpisode(titleVal || `[${getActiveSpeakingDay().episodes.length + 1}] 새 에피소드`, koVal, enVal);
             if(episode.sentences.length === 0) {
                 await showAlert("문장을 나누지 못했습니다. 마침표(. ! ?)로 끝나는 문장인지 확인해주세요.");
                 return;
@@ -2597,8 +2557,7 @@
                 const koParagraph = String(item.ko ?? item['한글'] ?? item.korean ?? "").trim();
                 const enParagraph = String(item.en ?? item['영어'] ?? item.english ?? "").trim();
                 const title = String(item.title ?? item['제목'] ?? `[${idx + 1}] 에피소드 ${idx + 1}`).trim();
-                const audioUrl = String(item.audio ?? item['오디오'] ?? "").trim();
-                return buildSpeakingEpisode(title, koParagraph, enParagraph, audioUrl);
+                return buildSpeakingEpisode(title, koParagraph, enParagraph);
             }).filter(ep => ep.sentences.length > 0);
         }
 
@@ -2706,8 +2665,7 @@
             'microphone': '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
             'chevron-left': '<polyline points="15 18 9 12 15 6"/>',
             'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
-            'volume-high': '<polygon points="4 9 8 9 12 5 12 19 8 15 4 15"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
-            'headphones': '<path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="1.5" y="14" width="5" height="7" rx="1.5"/><rect x="17.5" y="14" width="5" height="7" rx="1.5"/>'
+            'volume-high': '<polygon points="4 9 8 9 12 5 12 19 8 15 4 15"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'
         };
         const ICON_SIZE_MAP = {
             'text-[11px]': 11, 'text-[13px]': 13, 'text-xs': 12, 'text-sm': 14,
