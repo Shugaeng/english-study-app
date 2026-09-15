@@ -285,6 +285,14 @@
                 </div>
 
                 <div class="px-6 pb-6">
+                    <div id="speak-episode-empty" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card text-center text-sm text-textMuted mb-4">
+                        이 Day에는 아직 에피소드가 없어요.<br>설정 탭에서 에피소드를 추가해주세요.
+                    </div>
+                    <div id="speak-episode-picker" class="mb-4">
+                        <div id="speak-episode-chips" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+                        <p id="speak-episode-title" class="text-sm font-bold text-primary mt-2"></p>
+                    </div>
+
                     <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-6">
                         <div class="flex justify-center items-center text-xs text-textMuted font-medium mb-3">
                             <span id="speak-progress-text">0 / 0</span>
@@ -409,12 +417,13 @@
                         <div class="flex justify-between items-center mb-3">
                             <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-microphone text-primary"></i> 말하기 문장 관리 (Day1~40)</h2>
                         </div>
+                        <p class="text-[11px] text-textMuted mb-3">한 Day 안에는 여러 개의 <strong>에피소드</strong>(문단)가 있고, 에피소드는 마침표 기준으로 자동으로 여러 문장으로 나뉘어 한 문장씩 말하기 연습을 할 수 있어요.</p>
                         <select class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeSpeakingDay(this.value)"></select>
                         <div class="grid grid-cols-2 gap-2 mb-2">
-                            <button id="add-speaking-sentence-btn" class="bg-primary text-white text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">문장 추가</button>
+                            <button id="add-speaking-sentence-btn" class="bg-primary text-white text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">에피소드 추가</button>
                             <button id="import-speaking-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">가져오기</button>
                         </div>
-                        <button id="clear-speaking-day-btn" class="w-full bg-red-50 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform mb-3">이 Day 문장 전체 삭제</button>
+                        <button id="clear-speaking-day-btn" class="w-full bg-red-50 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform mb-3">이 Day 전체 삭제</button>
                         <input type="file" id="speaking-file-input" accept=".json" style="display:none;">
                         <div class="flex gap-3 text-[11px] text-textMuted mb-3">
                             <span>대량 업로드 양식:</span>
@@ -507,15 +516,19 @@
         <!-- 말하기 문장 추가 모달 -->
         <div id="add-speaking-modal" class="absolute inset-0 bg-black/40 z-50 flex items-center justify-center p-6" style="display:none;">
             <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-                <h3 class="text-lg font-bold text-textDark mb-4">새 문장 추가하기</h3>
+                <h3 class="text-lg font-bold text-textDark mb-4">새 에피소드 추가하기</h3>
                 <div class="space-y-3 mb-5">
                     <div>
-                        <label class="text-xs text-textMuted font-medium block mb-1">한글 문장 (화면에 표시됨)</label>
-                        <textarea id="new-speaking-ko-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: 토요일에는 늦잠을 자고 싶었어요."></textarea>
+                        <label class="text-xs text-textMuted font-medium block mb-1">에피소드 제목 (선택)</label>
+                        <input type="text" id="new-speaking-title-input" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark" placeholder="예: [1] 후회 제로 러닝">
                     </div>
                     <div>
-                        <label class="text-xs text-textMuted font-medium block mb-1">영어 목표 문장 (채점 기준)</label>
-                        <textarea id="new-speaking-en-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I wanted to sleep in on Saturday."></textarea>
+                        <label class="text-xs text-textMuted font-medium block mb-1">한글 전체 문단 (마침표 기준으로 자동 분리됨)</label>
+                        <textarea id="new-speaking-ko-input" rows="3" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: 토요일에는 늦잠을 자고 싶었어요. 대신 러닝을 하러 가기로 했어요."></textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">영어 전체 문단 (채점 기준, 마침표 기준으로 자동 분리됨)</label>
+                        <textarea id="new-speaking-en-input" rows="3" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I wanted to sleep in on Saturday. I chose to go running instead."></textarea>
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -614,7 +627,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.5.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.6.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -632,17 +645,54 @@
             {"id":"p3","p":"It is well known that any exercise, like running or playing basketball, is great for your body and can even help improve your mood. But scientists have recently learned that for a period of time after you've exercised, your body produces a chemical that makes your brain more effective in learning. Exercise can create a stronger, faster brain. So if you're stuck on a homework problem, ____________________, then try the problem again. You just might discover that you're able to solve it.","a":5,"t":"달리기나 농구 같은 운동이 신체에 도움이 되고 기분을 향상시킨다는 사실은 잘 알려져 있다. 최근 과학자들은 운동 후 몸이 두뇌의 학습을 더 효과적으로 만들어주는 화학물질을 분비한다는 것을 알아냈다. 운동은 강하고 빠른 두뇌를 만든다. 숙제를 하다 막히면 밖으로 나가 축구를 하고 와서 다시 풀어보아라. 문제를 해결할 수 있다는 것을 알게 될 수도 있다.","v":["exercise:운동하다","period:기간","chemical:화학물질"],"c":["take a short sleep for a while","look up other reference books","talk to your teachers or parents","spend more time on that subject","go out and play a game of soccer"]}
         ];
 
-        // Day1 예시 문장 (나머지 Day2~40은 빈 상태로 시작 — 설정 탭에서 문장을 추가/가져오기)
-        const DEFAULT_SPEAKING_SENTENCES = [
-            { id: "s1", ko: "토요일에는 늦잠을 자고 싶었지만, 몸이 일주일 내내 찌뿌둥했기 때문에 대신 러닝을 하러 가기로 했어요.", en: "I wanted to sleep in on Saturday, but I chose to go running instead because my body felt stiff all week." },
-            { id: "s2", ko: "저는 매일 아침 일어나자마자 물 한 잔을 마시는 습관을 들이려고 노력하고 있어요.", en: "I'm trying to build a habit of drinking a glass of water right after I wake up every morning." },
-            { id: "s3", ko: "이번 주말에는 특별한 계획이 없어서, 그냥 집에서 푹 쉬면서 밀린 드라마를 볼 것 같아요.", en: "I don't have any special plans this weekend, so I'll probably just relax at home and catch up on the shows I've missed." }
+        // Day1 예시 에피소드 6개 (나머지 Day2~40은 빈 상태로 시작 — 설정 탭에서 에피소드를 추가/가져오기)
+        // 각 항목의 ko/en은 "전체 문단" 텍스트이며, 로딩 시 마침표 기준으로 자동으로 여러 문장으로 나뉨
+        const DEFAULT_SPEAKING_EPISODES = [
+            { title: "[1] 후회 제로 러닝",
+              ko: "토요일에는 늦잠을 자고 싶었지만, 몸이 일주일 내내 찌뿌둥했기 때문에 대신 러닝을 하러 가기로 했어요. 처음에는 다리가 무거웠지만, 서늘한 공기가 서서히 저를 깨워줬어요. 달리러 나간 덕분에, 죄책감 대신 뿌듯한 기분으로 하루를 열 수 있었어요.",
+              en: "I wanted to sleep in on Saturday, but I chose to go running instead because my body felt stiff all week. At first my legs felt heavy, but the cool air slowly woke me up. Because I went for a run, I started my day feeling proud of myself instead of guilty." },
+            { title: "[2] 단골 카페 잠시 배신",
+              ko: "어느 날 아침 단골 카페 앞을 지나는데, 들어가지 않기로 했어요. 그 이유는 줄이 이미 문밖까지 늘어서 있었기 때문인데, 덕분에 골목 안의 더 작은 카페를 찾아내게 됐죠. 그곳은 실내가 조용해서, 집중해야 할 때면 이제 보통 그 카페를 선택해요.",
+              en: "One morning I walked past my usual cafe and decided not to go in. The reason is the line was already out the door, so I ended up finding a smaller cafe on a side street. It was quiet inside, so now I usually choose that cafe when I need to focus." },
+            { title: "[3] 치킨 대신 샐러드 저녁",
+              ko: "퇴근 후 정말 후라이드 치킨이 먹고 싶었지만, 일주일 내내 부담스러운 음식을 먹었기 때문에 대신 샐러드를 시켰어요. 샐러드에 치킨을 좀 넣어서 그래도 든든하게 느껴졌어요. 다음날 아침, 몸이 더 가볍게 느껴지고 더부룩한 느낌도 덜해서, 그 뒤로는 그 기분이 좋아서 저녁을 더 건강하게 고려해요.",
+              en: "After work, I really wanted fried chicken, but I ordered a salad instead because I ate heavy food all week. I added some chicken so it still felt filling. The next morning, I felt lighter and less bloated, so now I try to choose healthier dinners because I like that feeling." },
+            { title: "[4] 할말하않 회의",
+              ko: "언젠가 회의 중에 하고 싶은 말이 많았지만, 안건이 이미 가득했기 때문에 대부분은 마음속에 두기로 했어요. 대신 회의 끝에 핵심 요점 한 가지만 공유했습니다. 모두가 피곤한 상태였기에 그 한 가지에 더 쉽게 집중할 수 있었고, 말을 짧게 해서 제 메시지가 더 눈에 띄었어요.",
+              en: "During one meeting, I had a lot of opinions, but I decided to keep most of them to myself because the agenda was already full. Instead, I only shared one key point at the end. Since everyone was tired, it was easier for them to focus on that one point, and because I kept it brief, my message stood out more." },
+            { title: "[5] 야근 탈주, 집으로 퇴근",
+              ko: "어느 날 밤, 늦게까지 회사에 남아 있을 수도 있었지만 이미 자잘한 실수를 하고 있어서 여섯 시에 일을 멈추기로 했어요. 좀 쉬어야겠기에 노트북을 닫고 집에 갔습니다. 잠깐의 산책과 저녁 식사 뒤 잠자리에 들었더니, 다음날 아침에는 모든 일을 훨씬 더 빨리 바로잡을 수 있었어요.",
+              en: "One night I could have stayed late at the office, but I stopped working at six because I was already making small mistakes. I closed my laptop and went home since I needed to get some rest. After a short walk and dinner, I went to bed, so I was able to fix everything much faster the next morning." },
+            { title: "[6] 주말 약속 올 캔슬",
+              ko: "언젠가 한 주는 완전히 번아웃이 온 것 같아서 주말 약속을 전부 취소했어요. 친구들에게 솔직하게 쉴 시간이 필요하다고 말했어요. 그 주말 동안은 그저 푹 자고 간단한 음식만 해먹으며 지냈고, 에너지를 다시 찾는 데 도움이 됐어요.",
+              en: "One week, I canceled all my weekend plans because I felt completely burnt out. I was honest with my friends and told them that I needed some time off. I spent the weekend just sleeping and cooking simple meals, and that helped me get my energy back." }
         ];
 
         // ==================================================================
         // 단어장 / 독해집 / 말하기(Day) 데이터 (다중 세트 지원) — 구버전 데이터가 있으면 자동 이전
         // ==================================================================
         function uid() { return '_' + Math.random().toString(36).substr(2, 9); }
+
+        // 말하기 에피소드의 전체 문단(ko/en)을 마침표(.!?) 기준으로 문장 단위로 나눔
+        function splitIntoSentences(text) {
+            return (text || '')
+                .split(/(?<=[.!?])\s+/)
+                .map(s => s.trim())
+                .filter(Boolean);
+        }
+
+        // 한글 전체 문단과 영어 전체 문단을 각각 문장으로 나눈 뒤, 순서대로 짝지어
+        // 하나의 에피소드({id, title, sentences})를 만듦. 문장 수가 안 맞으면 짧은 쪽 기준으로만 짝지음
+        function buildSpeakingEpisode(title, koParagraph, enParagraph) {
+            const koSentences = splitIntoSentences(koParagraph);
+            const enSentences = splitIntoSentences(enParagraph);
+            const n = Math.min(koSentences.length, enSentences.length);
+            const sentences = [];
+            for(let i = 0; i < n; i++) {
+                sentences.push({ id: uid(), ko: koSentences[i], en: enSentences[i] });
+            }
+            return { id: uid(), title: (title || '').trim() || '제목 없는 에피소드', sentences, mismatched: koSentences.length !== enSentences.length };
+        }
 
         // ==================================================================
         // 커스텀 다이얼로그 (alert/confirm/prompt 대체) — 일부 웹뷰 환경은
@@ -725,14 +775,35 @@
         function saveActiveReadingBookId() { localStorage.setItem(STORAGE_KEY_ACTIVE_READINGBOOK, activeReadingBookId); }
 
         // 말하기(Day1~40) 데이터 — Day는 사용자가 추가/삭제할 수 없는 고정 40개 슬롯이며,
-        // 각 슬롯 안의 문장만 설정 탭에서 추가/가져오기/삭제할 수 있음
-        let speakingDays = JSON.parse(localStorage.getItem(STORAGE_KEY_SPEAKING_DAYS));
-        if(!speakingDays || !Array.isArray(speakingDays) || speakingDays.length !== 40) {
-            speakingDays = Array.from({ length: 40 }, (_, i) => ({
+        // 각 Day 안에는 여러 개의 에피소드(문단)가 있고, 에피소드는 문장 단위로 나뉘어 있음
+        // 각 슬롯 안의 에피소드만 설정 탭에서 추가/가져오기/삭제할 수 있음
+        function buildDefaultSpeakingDays() {
+            return Array.from({ length: 40 }, (_, i) => ({
                 id: `day${i + 1}`,
                 name: `Day ${i + 1}`,
-                sentences: (i === 0) ? DEFAULT_SPEAKING_SENTENCES : []
+                episodes: (i === 0) ? DEFAULT_SPEAKING_EPISODES.map(e => buildSpeakingEpisode(e.title, e.ko, e.en)) : []
             }));
+        }
+
+        // 예전 버전(문장 하나 = 항목 하나였던 평면 구조, day.sentences)으로 저장된 데이터를
+        // 새 구조(day.episodes[].sentences)로 자동 이전 — 각 기존 항목이 그대로 에피소드 1개가 됨
+        function migrateSpeakingDaysToEpisodes(days) {
+            days.forEach((day, dIdx) => {
+                if(Array.isArray(day.episodes)) return; // 이미 새 구조
+                const oldEntries = Array.isArray(day.sentences) ? day.sentences : [];
+                day.episodes = oldEntries.map((entry, idx) =>
+                    buildSpeakingEpisode(entry.title || `[${idx + 1}] 에피소드 ${idx + 1}`, entry.ko, entry.en)
+                );
+                delete day.sentences;
+            });
+            return days;
+        }
+
+        let speakingDays = JSON.parse(localStorage.getItem(STORAGE_KEY_SPEAKING_DAYS));
+        if(!speakingDays || !Array.isArray(speakingDays) || speakingDays.length !== 40) {
+            speakingDays = buildDefaultSpeakingDays();
+        } else {
+            migrateSpeakingDaysToEpisodes(speakingDays);
         }
         let activeSpeakingDayId = localStorage.getItem(STORAGE_KEY_ACTIVE_SPEAKING_DAY) || speakingDays[0].id;
         if(!speakingDays.find(d => d.id === activeSpeakingDayId)) activeSpeakingDayId = speakingDays[0].id;
@@ -740,6 +811,7 @@
         function getActiveSpeakingDay() { return speakingDays.find(d => d.id === activeSpeakingDayId) || speakingDays[0]; }
         function saveSpeakingDays() { localStorage.setItem(STORAGE_KEY_SPEAKING_DAYS, JSON.stringify(speakingDays)); }
         function saveActiveSpeakingDayId() { localStorage.setItem(STORAGE_KEY_ACTIVE_SPEAKING_DAY, activeSpeakingDayId); }
+        function getSpeakingDaySentenceCount(day) { return day.episodes.reduce((sum, e) => sum + e.sentences.length, 0); }
 
         // 현황 탭 전용 단어장 선택 — 암기/퀴즈 탭에서 쓰는 활성 단어장과는 별도로,
         // 현황 탭의 통계(마스터 단어/미암기 단어율)를 어떤 단어장 기준으로 볼지 독립적으로 고를 수 있음
@@ -941,7 +1013,7 @@
         // Day1~40 선택 드롭다운은 말하기 탭과 설정 탭(문장 관리)이 함께 씀 — 하나만 있는 activeSpeakingDayId를 공유
         function populateSpeakingDaySelectors() {
             document.querySelectorAll('.speaking-day-select').forEach(sel => {
-                sel.innerHTML = speakingDays.map(d => `<option value="${d.id}" ${d.id===activeSpeakingDayId?'selected':''}>${escapeHtml(d.name)} (${d.sentences.length}문장)</option>`).join('');
+                sel.innerHTML = speakingDays.map(d => `<option value="${d.id}" ${d.id===activeSpeakingDayId?'selected':''}>${escapeHtml(d.name)} (에피소드 ${d.episodes.length}개 · 문장 ${getSpeakingDaySentenceCount(d)}개)</option>`).join('');
             });
         }
 
@@ -949,6 +1021,8 @@
             if(!id || id === activeSpeakingDayId) return;
             activeSpeakingDayId = id;
             saveActiveSpeakingDayId();
+            speakEpisodeIndex = 0;
+            speakSentenceIndex = 0;
             populateSpeakingDaySelectors();
 
             const activePanel = document.querySelector('.panel.active');
@@ -1485,16 +1559,66 @@
         // Speech API)으로 내가 말한 영어를 받아써서 목표 문장과 단어 단위로 비교해 채점함.
         // (실제 발음/억양 평가가 아니라 "인식된 텍스트 vs 목표 문장" 유사도 기반 근사 채점입니다)
         // ==================================================================
-        let speakSentenceIndex = 0;
+        let speakEpisodeIndex = 0; // 현재 Day 안에서 선택된 에피소드 인덱스
+        let speakSentenceIndex = 0; // 현재 에피소드 안에서 연습 중인 문장 인덱스
 
+        function getSpeakingEpisodes() {
+            return getActiveSpeakingDay().episodes;
+        }
+        function getCurrentSpeakingEpisode() {
+            const episodes = getSpeakingEpisodes();
+            return episodes[speakEpisodeIndex] || null;
+        }
         function getSpeakingPool() {
-            return getActiveSpeakingDay().sentences;
+            const episode = getCurrentSpeakingEpisode();
+            return episode ? episode.sentences : [];
         }
 
         function initSpeakingTab() {
             stopSpeakingRecognition();
-            const pool = getSpeakingPool();
-            if(speakSentenceIndex >= pool.length) speakSentenceIndex = 0;
+            const episodes = getSpeakingEpisodes();
+            if(speakEpisodeIndex >= episodes.length) speakEpisodeIndex = 0;
+            speakSentenceIndex = 0;
+            renderEpisodeChips();
+            renderSpeakingSentence();
+        }
+
+        // Day 안의 에피소드를 1,2,3... 번호 칩으로 렌더링 — 클릭하면 그 에피소드로 이동
+        function renderEpisodeChips() {
+            const episodes = getSpeakingEpisodes();
+            const emptyEl = document.getElementById("speak-episode-empty");
+            const pickerEl = document.getElementById("speak-episode-picker");
+            const chipsEl = document.getElementById("speak-episode-chips");
+            const titleEl = document.getElementById("speak-episode-title");
+
+            if(episodes.length === 0) {
+                emptyEl.classList.remove("hidden");
+                pickerEl.classList.add("hidden");
+                return;
+            }
+            emptyEl.classList.add("hidden");
+            pickerEl.classList.remove("hidden");
+
+            chipsEl.innerHTML = "";
+            episodes.forEach((ep, idx) => {
+                const chip = document.createElement("button");
+                const active = idx === speakEpisodeIndex;
+                chip.textContent = String(idx + 1);
+                chip.className = "shrink-0 w-9 h-9 rounded-full text-sm font-bold border transition-colors " +
+                    (active ? "bg-primary text-white border-primary" : "bg-cardGray text-textMuted border-divider");
+                chip.addEventListener("click", () => changeSpeakingEpisode(idx));
+                chipsEl.appendChild(chip);
+            });
+            titleEl.textContent = episodes[speakEpisodeIndex] ? episodes[speakEpisodeIndex].title : "";
+        }
+
+        function changeSpeakingEpisode(idx) {
+            stopSpeakingRecognition();
+            const episodes = getSpeakingEpisodes();
+            if(idx < 0 || idx >= episodes.length || idx === speakEpisodeIndex) return;
+            speakEpisodeIndex = idx;
+            speakSentenceIndex = 0;
+            renderEpisodeChips();
             renderSpeakingSentence();
         }
 
@@ -1503,10 +1627,18 @@
             const micBtn = document.getElementById("speak-mic-btn");
             document.getElementById("speak-result-area").classList.add("hidden");
 
+            if(getSpeakingEpisodes().length === 0) {
+                document.getElementById("speak-progress-text").textContent = "0 / 0";
+                document.getElementById("speak-ko-sentence").textContent = "이 Day에는 아직 에피소드가 없어요";
+                document.getElementById("speak-status-text").textContent = "설정 탭에서 에피소드를 먼저 추가해주세요";
+                micBtn.disabled = true;
+                micBtn.classList.add("opacity-40");
+                return;
+            }
             if(pool.length === 0) {
                 document.getElementById("speak-progress-text").textContent = "0 / 0";
-                document.getElementById("speak-ko-sentence").textContent = "이 Day에는 아직 문장이 없어요";
-                document.getElementById("speak-status-text").textContent = "설정 탭에서 말하기 문장을 먼저 추가해주세요";
+                document.getElementById("speak-ko-sentence").textContent = "이 에피소드에는 문장이 없어요";
+                document.getElementById("speak-status-text").textContent = "설정 탭에서 문장을 확인해주세요";
                 micBtn.disabled = true;
                 micBtn.classList.add("opacity-40");
                 return;
@@ -1794,8 +1926,11 @@
             }
             if(data.speakingDays && Array.isArray(data.speakingDays) && data.speakingDays.length === 40) {
                 speakingDays = data.speakingDays;
+                migrateSpeakingDaysToEpisodes(speakingDays); // 예전(평면 문장) 형식으로 백업된 경우 대비
                 activeSpeakingDayId = data.activeSpeakingDayId && speakingDays.find(d => d.id === data.activeSpeakingDayId)
                     ? data.activeSpeakingDayId : speakingDays[0].id;
+                speakEpisodeIndex = 0;
+                speakSentenceIndex = 0;
             }
             if(data.stats) stats = data.stats;
             if(data.userGoals) userGoals = data.userGoals;
@@ -2184,81 +2319,128 @@
         });
 
         // ==================================================================
-        // 말하기 문장 관리 (Day는 고정 40개 슬롯 — 안의 문장만 추가/가져오기/전체삭제)
+        // 말하기 문장 관리 (Day는 고정 40개 슬롯 — 안의 에피소드만 추가/가져오기/전체삭제)
         // ==================================================================
         function renderSpeakingManageList() {
             const container = document.getElementById("speaking-manage-list");
             if(!container) return;
             const day = getActiveSpeakingDay();
 
-            if(day.sentences.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-textMuted text-xs">이 Day에 등록된 문장이 없습니다.</div>`;
+            if(day.episodes.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-textMuted text-xs">이 Day에 등록된 에피소드가 없습니다.</div>`;
                 return;
             }
 
             container.innerHTML = "";
-            day.sentences.forEach((s) => {
-                const item = document.createElement("div");
-                item.className = "bg-cardGray border border-divider rounded-xl p-3 flex justify-between items-start gap-2";
-                item.innerHTML = `
-                    <div class="min-w-0">
-                        <div class="text-xs font-bold text-textDark break-words">${escapeHtml(s.ko)}</div>
-                        <div class="text-[11px] text-primary mt-0.5 break-words">${escapeHtml(s.en)}</div>
+            day.episodes.forEach((ep, epIdx) => {
+                const card = document.createElement("div");
+                card.className = "bg-cardGray border border-divider rounded-xl p-3";
+
+                const sentencesHtml = ep.sentences.length > 0
+                    ? ep.sentences.map(s => `
+                        <div class="flex justify-between items-start gap-2 bg-white border border-divider rounded-lg p-2.5 mt-1.5">
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-textDark break-words">${escapeHtml(s.ko)}</div>
+                                <div class="text-[11px] text-primary mt-0.5 break-words">${escapeHtml(s.en)}</div>
+                            </div>
+                            <button class="text-textMuted hover:text-red-500 p-1 text-sm shrink-0 delete-speaking-sentence-btn" data-sentence-id="${s.id}"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    `).join('')
+                    : `<div class="text-[11px] text-textMuted mt-1.5">문장이 없습니다.</div>`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center gap-2">
+                        <div class="text-xs font-bold text-textDark break-words min-w-0">${epIdx + 1}. ${escapeHtml(ep.title)}</div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button class="text-[11px] font-semibold text-primary px-2 py-1 rename-speaking-episode-btn">이름변경</button>
+                            <button class="text-textMuted hover:text-red-500 p-1 text-sm delete-speaking-episode-btn"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
                     </div>
-                    <button class="text-textMuted hover:text-red-500 p-1 text-sm shrink-0 delete-speaking-btn"><i class="fa-solid fa-trash-can"></i></button>
+                    ${sentencesHtml}
                 `;
-                item.querySelector(".delete-speaking-btn").addEventListener("click", () => {
-                    day.sentences = day.sentences.filter(item2 => item2.id !== s.id);
+
+                card.querySelector(".delete-speaking-episode-btn").addEventListener("click", async () => {
+                    if(!(await showConfirm(`'${ep.title}' 에피소드를 삭제할까요?`))) return;
+                    day.episodes = day.episodes.filter(item => item.id !== ep.id);
                     saveSpeakingDays();
                     renderSpeakingManageList();
                     populateSpeakingDaySelectors();
                 });
-                renderIcons(item);
-                container.appendChild(item);
+                card.querySelector(".rename-speaking-episode-btn").addEventListener("click", async () => {
+                    const name = await showPrompt("에피소드 제목을 입력하세요:", ep.title);
+                    if(!name || !name.trim()) return;
+                    ep.title = name.trim();
+                    saveSpeakingDays();
+                    renderSpeakingManageList();
+                });
+                card.querySelectorAll(".delete-speaking-sentence-btn").forEach(btn => {
+                    btn.addEventListener("click", () => {
+                        const sentenceId = btn.dataset.sentenceId;
+                        ep.sentences = ep.sentences.filter(s => s.id !== sentenceId);
+                        saveSpeakingDays();
+                        renderSpeakingManageList();
+                        populateSpeakingDaySelectors();
+                    });
+                });
+
+                renderIcons(card);
+                container.appendChild(card);
             });
         }
 
         document.getElementById("add-speaking-sentence-btn").addEventListener("click", () => {
+            document.getElementById("new-speaking-title-input").value = "";
+            document.getElementById("new-speaking-ko-input").value = "";
+            document.getElementById("new-speaking-en-input").value = "";
             document.getElementById("add-speaking-modal").style.display = "flex";
         });
         document.getElementById("close-speaking-modal-btn").addEventListener("click", () => {
             document.getElementById("add-speaking-modal").style.display = "none";
         });
         document.getElementById("save-new-speaking-btn").addEventListener("click", async () => {
+            const titleVal = document.getElementById("new-speaking-title-input").value.trim();
             const koVal = document.getElementById("new-speaking-ko-input").value.trim();
             const enVal = document.getElementById("new-speaking-en-input").value.trim();
             if(!koVal || !enVal) {
-                await showAlert("한글 문장과 영어 문장을 모두 입력해주세요.");
+                await showAlert("한글 문단과 영어 문단을 모두 입력해주세요.");
                 return;
             }
-            getActiveSpeakingDay().sentences.push({ id: uid(), ko: koVal, en: enVal });
+            const episode = buildSpeakingEpisode(titleVal || `[${getActiveSpeakingDay().episodes.length + 1}] 새 에피소드`, koVal, enVal);
+            if(episode.sentences.length === 0) {
+                await showAlert("문장을 나누지 못했습니다. 마침표(. ! ?)로 끝나는 문장인지 확인해주세요.");
+                return;
+            }
+            getActiveSpeakingDay().episodes.push(episode);
             saveSpeakingDays();
-            document.getElementById("new-speaking-ko-input").value = "";
-            document.getElementById("new-speaking-en-input").value = "";
             document.getElementById("add-speaking-modal").style.display = "none";
             renderSpeakingManageList();
             populateSpeakingDaySelectors();
+            if(episode.mismatched) {
+                await showAlert(`한글/영어 문장 수가 서로 달라서, 짧은 쪽 기준으로 ${episode.sentences.length}개 문장만 짝지어졌어요. 목록에서 확인해주세요.`);
+            }
         });
 
         document.getElementById("clear-speaking-day-btn").addEventListener("click", async () => {
             const day = getActiveSpeakingDay();
-            if(day.sentences.length === 0) { await showAlert("이미 비어있는 Day입니다."); return; }
-            if(!(await showConfirm(`'${day.name}'의 문장 ${day.sentences.length}개를 모두 삭제할까요?`))) return;
-            day.sentences = [];
+            if(day.episodes.length === 0) { await showAlert("이미 비어있는 Day입니다."); return; }
+            if(!(await showConfirm(`'${day.name}'의 에피소드 ${day.episodes.length}개를 모두 삭제할까요?`))) return;
+            day.episodes = [];
             saveSpeakingDays();
             renderSpeakingManageList();
             populateSpeakingDaySelectors();
         });
 
-        // ko/en(또는 한글/영어) 키를 가진 JSON 배열 텍스트를 파싱
+        // title(선택)/ko/en(전체 문단, 또는 한글/영어) 키를 가진 JSON 배열 텍스트를 파싱해
+        // 각 항목을 하나의 에피소드로 만듦 (문단은 마침표 기준으로 자동으로 문장 단위로 나뉨)
         function parseSpeakingFile(text) {
             const data = JSON.parse(text.replace(/^﻿/, ''));
             if(!Array.isArray(data)) throw new Error("JSON 배열([]) 형식이어야 합니다.");
-            return data.map(item => ({
-                id: uid(),
-                ko: String(item.ko ?? item['한글'] ?? item.korean ?? "").trim(),
-                en: String(item.en ?? item['영어'] ?? item.english ?? "").trim()
-            })).filter(s => s.ko && s.en);
+            return data.map((item, idx) => {
+                const koParagraph = String(item.ko ?? item['한글'] ?? item.korean ?? "").trim();
+                const enParagraph = String(item.en ?? item['영어'] ?? item.english ?? "").trim();
+                const title = String(item.title ?? item['제목'] ?? `[${idx + 1}] 에피소드 ${idx + 1}`).trim();
+                return buildSpeakingEpisode(title, koParagraph, enParagraph);
+            }).filter(ep => ep.sentences.length > 0);
         }
 
         document.getElementById("import-speaking-btn").addEventListener("click", () => {
@@ -2271,12 +2453,12 @@
             reader.onload = async (ev) => {
                 try {
                     const parsed = parseSpeakingFile(ev.target.result);
-                    if(parsed.length === 0) { await showAlert("가져올 문장을 찾지 못했습니다. 파일 형식을 확인해주세요."); return; }
-                    getActiveSpeakingDay().sentences.push(...parsed);
+                    if(parsed.length === 0) { await showAlert("가져올 에피소드를 찾지 못했습니다. 파일 형식을 확인해주세요."); return; }
+                    getActiveSpeakingDay().episodes.push(...parsed);
                     saveSpeakingDays();
                     renderSpeakingManageList();
                     populateSpeakingDaySelectors();
-                    await showAlert(`'${getActiveSpeakingDay().name}'에 ${parsed.length}개 문장을 추가했습니다.`);
+                    await showAlert(`'${getActiveSpeakingDay().name}'에 에피소드 ${parsed.length}개를 추가했습니다.`);
                 } catch(err) {
                     await showAlert("파일을 읽는 중 오류가 발생했습니다: " + err.message);
                 }
@@ -2305,8 +2487,16 @@
                 filename = "독해_템플릿.json"; mime = "application/json;charset=utf-8";
             } else if(type === 'speaking-json') {
                 content = JSON.stringify([
-                    { ko: "토요일에는 늦잠을 자고 싶었어요.", en: "I wanted to sleep in on Saturday." },
-                    { ko: "대신 러닝을 하러 가기로 했어요.", en: "I chose to go running instead." }
+                    {
+                        title: "[1] 후회 제로 러닝",
+                        ko: "토요일에는 늦잠을 자고 싶었어요. 대신 러닝을 하러 가기로 했어요.",
+                        en: "I wanted to sleep in on Saturday. I chose to go running instead."
+                    },
+                    {
+                        title: "[2] 단골 카페 잠시 배신",
+                        ko: "어느 날 아침 단골 카페 앞을 지나는데, 들어가지 않기로 했어요.",
+                        en: "One morning I walked past my usual cafe and decided not to go in."
+                    }
                 ], null, 2);
                 filename = "말하기_템플릿.json"; mime = "application/json;charset=utf-8";
             } else { return; }
