@@ -48,6 +48,7 @@
         .book-select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238B95A1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
         .speak-word-correct { text-decoration: underline; text-decoration-color: #34A853; text-decoration-thickness: 2px; text-underline-offset: 3px; }
         .speak-word-wrong { text-decoration: underline dotted; text-decoration-color: #EA4335; text-decoration-thickness: 2px; text-underline-offset: 3px; color: #C5221F; }
+        .speak-word-extra { background: #FEF3C7; color: #B45309; border-radius: 4px; padding: 0 3px; text-decoration: line-through; text-decoration-color: #B45309; }
         .speak-sentence-clickable { cursor: pointer; border-radius: 6px; padding: 2px 3px; transition: background-color 0.15s; }
         .speak-sentence-clickable:hover, .speak-sentence-clickable:active { background-color: rgba(91, 92, 240, 0.12); }
         #speak-mic-btn.recording { animation: speak-pulse 1.2s ease-in-out infinite; background-color: #EA4335 !important; }
@@ -341,7 +342,7 @@
                     </div>
 
                     <div id="speak-result-area" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card">
-                        <div class="text-xs font-bold text-textMuted mb-1" id="speak-result-label">내가 말한 문장</div>
+                        <div class="text-xs font-bold text-textMuted mb-1" id="speak-result-label">내가 말한 문장 <span class="font-normal">(원문에 없는 단어는 노란 취소선)</span></div>
                         <p id="speak-recognized-text" class="text-sm text-textMuted mb-3"></p>
                         <div class="text-xs font-bold text-textMuted mb-2">목표 문장 <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span></div>
                         <p id="speak-result-sentence" class="text-lg leading-relaxed text-textDark mb-4"></p>
@@ -685,7 +686,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.10.2"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.11.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1904,11 +1905,6 @@
             speakEnglishText(target.en);
         });
 
-        // 채점용 토큰화: 소문자로 바꾸고 구두점을 제거해 단어만 남김
-        function tokenizeForScoring(text) {
-            return (text || '').toLowerCase().replace(/[^a-z0-9\s']/g, '').split(/\s+/).filter(Boolean);
-        }
-
         // 원문 그대로의 토큰(대소문자·마침표 등 구두점 유지)과, 채점용으로 정리한 토큰을
         // 같은 개수·순서로 함께 만들어 돌려줌 — 결과 화면에 마침표가 살아있는 원문을 보여주면서도
         // 채점은 정리된 단어로 할 수 있게 함 (둘을 같은 루프에서 만들어서 개수가 항상 일치함)
@@ -1927,7 +1923,7 @@
         // 달라도 맞은 단어를 최대한 찾아내고, 목표 문장 단어 수 대비 맞은 비율을 점수로 씀
         function scoreSpeaking(targetText, recognizedText) {
             const { display: targetDisplay, clean: targetWords } = tokenizeWithDisplay(targetText);
-            const saidWords = tokenizeForScoring(recognizedText);
+            const { display: saidDisplay, clean: saidWords } = tokenizeWithDisplay(recognizedText);
             const n = targetWords.length, m = saidWords.length;
             const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
             for(let i = 1; i <= n; i++) {
@@ -1938,15 +1934,16 @@
                 }
             }
             const matched = new Array(n).fill(false);
+            const matchedSaid = new Array(m).fill(false); // 내가 입력/말한 단어 중 원문과 매칭된 단어 — 매칭 안 된 건 "원문에 없는 단어"
             let i = n, j = m;
             while(i > 0 && j > 0) {
-                if(targetWords[i - 1] === saidWords[j - 1]) { matched[i - 1] = true; i--; j--; }
+                if(targetWords[i - 1] === saidWords[j - 1]) { matched[i - 1] = true; matchedSaid[j - 1] = true; i--; j--; }
                 else if(dp[i - 1][j] >= dp[i][j - 1]) i--;
                 else j--;
             }
             const correctCount = matched.filter(Boolean).length;
             const percent = n > 0 ? Math.round((correctCount / n) * 100) : 0;
-            return { targetDisplay, matched, percent };
+            return { targetDisplay, matched, percent, saidDisplay, matchedSaid };
         }
 
         function speakingScoreMessage(percent) {
@@ -1960,13 +1957,17 @@
             source = source || 'voice'; // 'voice'(마이크 인식) 또는 'typed'(직접 입력)
             const target = getCurrentSpeakingTarget();
             if(!target) return;
-            const { targetDisplay, matched, percent } = scoreSpeaking(target.en, transcript);
+            const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(target.en, transcript);
 
             document.getElementById("speak-status-text").textContent = source === 'typed'
                 ? "채점이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 그 문장을 들을 수 있어요)"
                 : "인식이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 그 문장만 다시 들을 수 있어요)";
-            document.getElementById("speak-result-label").textContent = source === 'typed' ? "내가 입력한 문장" : "내가 말한 문장";
-            document.getElementById("speak-recognized-text").textContent = `"${transcript}"`;
+            document.getElementById("speak-result-label").innerHTML = (source === 'typed' ? "내가 입력한 문장" : "내가 말한 문장") + ' <span class="font-normal">(원문에 없는 단어는 노란 취소선)</span>';
+            // 원문에 없는(매칭 안 된) 단어는 speak-word-extra로 강조 표시 — 취소선 + 노란 배경
+            const recognizedHtml = saidDisplay.map((w, idx) =>
+                matchedSaid[idx] ? escapeHtml(w) : `<span class="speak-word-extra">${escapeHtml(w)}</span>`
+            ).join(' ');
+            document.getElementById("speak-recognized-text").innerHTML = `"${recognizedHtml}"`;
 
             // 원문 그대로(마침표·대소문자 유지)의 단어들을 원래 문장 경계대로 다시 묶어서,
             // 문장 하나씩 탭하면 그 문장만 재생되는 클릭 가능한 덩어리로 렌더링함
