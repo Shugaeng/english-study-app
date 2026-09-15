@@ -30,6 +30,9 @@
         }
     </script>
     <style>
+        /* 확대/축소(핀치줌·더블탭줌) 방지 — iOS Safari는 viewport meta의 user-scalable=no를
+           무시하는 경우가 많아서, touch-action으로도 한 번 더 막아둠 */
+        html, body { touch-action: pan-x pan-y; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .panel { display: none; }
@@ -581,6 +584,19 @@
 
     <script>
         // ==================================================================
+        // 확대/축소 방지 — Safari의 핀치줌(gesturestart 등)과 더블탭줌을 JS로 직접 막음
+        // (touch-action CSS나 viewport meta만으로는 iOS Safari에서 완전히 막히지 않는 경우가 있음)
+        // ==================================================================
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        let lastTouchEndTime = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if(now - lastTouchEndTime <= 300) e.preventDefault(); // 더블탭 줌 방지
+            lastTouchEndTime = now;
+        }, { passive: false });
+
+        // ==================================================================
         // 저장소 키
         // ==================================================================
         const STORAGE_KEY_WORDS = "english_study_words_v3"; // 구버전(마이그레이션용)
@@ -627,7 +643,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.6.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.6.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
