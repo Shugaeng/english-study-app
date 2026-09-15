@@ -294,6 +294,11 @@
                     <div id="speak-episode-picker" class="mb-4">
                         <div id="speak-episode-chips" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
                         <p id="speak-episode-title" class="text-sm font-bold text-primary mt-2"></p>
+
+                        <div class="flex bg-cardGray rounded-xl p-1 mt-3">
+                            <button id="speak-mode-sentence-btn" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">문장별로 말하기</button>
+                            <button id="speak-mode-episode-btn" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">에피소드 전체 말하기</button>
+                        </div>
                     </div>
 
                     <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-6">
@@ -315,6 +320,10 @@
                                 <i class="fa-solid fa-chevron-right"></i>
                             </button>
                         </div>
+
+                        <button id="speak-listen-btn" class="w-full mt-4 bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-volume-high"></i> 원어민 발음 듣기
+                        </button>
                     </div>
 
                     <div id="speak-result-area" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card">
@@ -643,7 +652,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.6.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.7.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -931,7 +940,7 @@
             if(tabId === 'speaking') initSpeakingTab();
             if(tabId === 'library') { renderWordList(); renderSpeakingManageList(); }
             if(tabId === 'dashboard') renderDashboard();
-            if(tabId !== 'speaking') stopSpeakingRecognition();
+            if(tabId !== 'speaking') { stopSpeakingRecognition(); stopSpeakingSynthesis(); }
         }
 
         function renderDashboard() {
@@ -1577,6 +1586,7 @@
         // ==================================================================
         let speakEpisodeIndex = 0; // 현재 Day 안에서 선택된 에피소드 인덱스
         let speakSentenceIndex = 0; // 현재 에피소드 안에서 연습 중인 문장 인덱스
+        let speakMode = 'sentence'; // 'sentence' = 한 문장씩, 'episode' = 에피소드 전체 한 번에
 
         function getSpeakingEpisodes() {
             return getActiveSpeakingDay().episodes;
@@ -1590,14 +1600,53 @@
             return episode ? episode.sentences : [];
         }
 
+        // 지금 연습 대상 텍스트 — 문장별 모드면 현재 문장 하나, 에피소드 모드면 에피소드
+        // 전체 문장을 이어붙인 문단 전체를 돌려줌 (녹음 채점/원어민 발음 듣기가 공통으로 사용)
+        function getCurrentSpeakingTarget() {
+            const episode = getCurrentSpeakingEpisode();
+            if(!episode || episode.sentences.length === 0) return null;
+            if(speakMode === 'episode') {
+                return {
+                    ko: episode.sentences.map(s => s.ko).join(' '),
+                    en: episode.sentences.map(s => s.en).join(' ')
+                };
+            }
+            return getSpeakingPool()[speakSentenceIndex] || null;
+        }
+
         function initSpeakingTab() {
             stopSpeakingRecognition();
+            stopSpeakingSynthesis();
             const episodes = getSpeakingEpisodes();
             if(speakEpisodeIndex >= episodes.length) speakEpisodeIndex = 0;
             speakSentenceIndex = 0;
             renderEpisodeChips();
+            renderSpeakModeToggle();
             renderSpeakingSentence();
         }
+
+        // 문장별 말하기 / 에피소드 전체 말하기 모드 전환 버튼 UI 갱신
+        function renderSpeakModeToggle() {
+            const sentenceBtn = document.getElementById("speak-mode-sentence-btn");
+            const episodeBtn = document.getElementById("speak-mode-episode-btn");
+            const activeCls = ["bg-white", "text-primary", "shadow-sm"];
+            const inactiveCls = ["text-textMuted"];
+            sentenceBtn.classList.remove(...activeCls, ...inactiveCls);
+            episodeBtn.classList.remove(...activeCls, ...inactiveCls);
+            sentenceBtn.classList.add(...(speakMode === 'sentence' ? activeCls : inactiveCls));
+            episodeBtn.classList.add(...(speakMode === 'episode' ? activeCls : inactiveCls));
+        }
+
+        function changeSpeakMode(mode) {
+            if(mode === speakMode) return;
+            stopSpeakingRecognition();
+            stopSpeakingSynthesis();
+            speakMode = mode;
+            renderSpeakModeToggle();
+            renderSpeakingSentence();
+        }
+        document.getElementById("speak-mode-sentence-btn").addEventListener("click", () => changeSpeakMode('sentence'));
+        document.getElementById("speak-mode-episode-btn").addEventListener("click", () => changeSpeakMode('episode'));
 
         // Day 안의 에피소드를 1,2,3... 번호 칩으로 렌더링 — 클릭하면 그 에피소드로 이동
         function renderEpisodeChips() {
@@ -1630,6 +1679,7 @@
 
         function changeSpeakingEpisode(idx) {
             stopSpeakingRecognition();
+            stopSpeakingSynthesis();
             const episodes = getSpeakingEpisodes();
             if(idx < 0 || idx >= episodes.length || idx === speakEpisodeIndex) return;
             speakEpisodeIndex = idx;
@@ -1641,7 +1691,14 @@
         function renderSpeakingSentence() {
             const pool = getSpeakingPool();
             const micBtn = document.getElementById("speak-mic-btn");
+            const listenBtn = document.getElementById("speak-listen-btn");
+            const prevBtn = document.getElementById("speak-prev-btn");
+            const nextBtn = document.getElementById("speak-next-btn");
             document.getElementById("speak-result-area").classList.add("hidden");
+
+            // 문장별 모드에서만 이전/다음 버튼 표시 (에피소드 전체 모드는 이동할 문장이 따로 없음)
+            prevBtn.classList.toggle("invisible", speakMode === 'episode');
+            nextBtn.classList.toggle("invisible", speakMode === 'episode');
 
             if(getSpeakingEpisodes().length === 0) {
                 document.getElementById("speak-progress-text").textContent = "0 / 0";
@@ -1649,6 +1706,8 @@
                 document.getElementById("speak-status-text").textContent = "설정 탭에서 에피소드를 먼저 추가해주세요";
                 micBtn.disabled = true;
                 micBtn.classList.add("opacity-40");
+                listenBtn.disabled = true;
+                listenBtn.classList.add("opacity-40");
                 return;
             }
             if(pool.length === 0) {
@@ -1657,20 +1716,30 @@
                 document.getElementById("speak-status-text").textContent = "설정 탭에서 문장을 확인해주세요";
                 micBtn.disabled = true;
                 micBtn.classList.add("opacity-40");
+                listenBtn.disabled = true;
+                listenBtn.classList.add("opacity-40");
                 return;
             }
             micBtn.disabled = false;
             micBtn.classList.remove("opacity-40");
+            listenBtn.disabled = false;
+            listenBtn.classList.remove("opacity-40");
 
             if(speakSentenceIndex >= pool.length) speakSentenceIndex = 0;
-            const item = pool[speakSentenceIndex];
-            document.getElementById("speak-progress-text").textContent = `${speakSentenceIndex + 1} / ${pool.length}`;
-            document.getElementById("speak-ko-sentence").textContent = item.ko;
+            const target = getCurrentSpeakingTarget();
+            if(speakMode === 'episode') {
+                document.getElementById("speak-progress-text").textContent = "에피소드 전체";
+            } else {
+                document.getElementById("speak-progress-text").textContent = `${speakSentenceIndex + 1} / ${pool.length}`;
+            }
+            document.getElementById("speak-ko-sentence").textContent = target.ko;
             document.getElementById("speak-status-text").textContent = "마이크 버튼을 눌러 말해보세요";
         }
 
         function moveSpeakingSentence(delta) {
+            if(speakMode !== 'sentence') return; // 에피소드 전체 모드에서는 문장 이동 없음
             stopSpeakingRecognition();
+            stopSpeakingSynthesis();
             const pool = getSpeakingPool();
             if(pool.length === 0) return;
             speakSentenceIndex = (speakSentenceIndex + delta + pool.length) % pool.length;
@@ -1678,6 +1747,27 @@
         }
         document.getElementById("speak-prev-btn").addEventListener("click", () => moveSpeakingSentence(-1));
         document.getElementById("speak-next-btn").addEventListener("click", () => moveSpeakingSentence(1));
+
+        // 원어민 발음 듣기 — 브라우저 내장 음성 합성(Web Speech API SpeechSynthesis)으로
+        // 지금 연습 대상(문장 또는 에피소드 전체)의 영어 텍스트를 읽어줌
+        function stopSpeakingSynthesis() {
+            if('speechSynthesis' in window) window.speechSynthesis.cancel();
+        }
+
+        document.getElementById("speak-listen-btn").addEventListener("click", async () => {
+            if(!('speechSynthesis' in window)) {
+                await showAlert("이 브라우저는 음성 합성(듣기 기능)을 지원하지 않아요.");
+                return;
+            }
+            const target = getCurrentSpeakingTarget();
+            if(!target) return;
+            stopSpeakingRecognition();
+            stopSpeakingSynthesis();
+            const utter = new SpeechSynthesisUtterance(target.en);
+            utter.lang = 'en-US';
+            utter.rate = 0.95;
+            window.speechSynthesis.speak(utter);
+        });
 
         // 채점용 토큰화: 소문자로 바꾸고 구두점을 제거해 단어만 남김
         function tokenizeForScoring(text) {
@@ -1718,10 +1808,9 @@
         }
 
         function handleSpeakingResult(transcript) {
-            const pool = getSpeakingPool();
-            if(pool.length === 0) return;
-            const item = pool[speakSentenceIndex];
-            const { targetWords, matched, percent } = scoreSpeaking(item.en, transcript);
+            const target = getCurrentSpeakingTarget();
+            if(!target) return;
+            const { targetWords, matched, percent } = scoreSpeaking(target.en, transcript);
 
             document.getElementById("speak-status-text").textContent = "인식이 완료됐어요. 결과를 확인해보세요.";
             document.getElementById("speak-recognized-text").textContent = `"${transcript}"`;
@@ -1730,7 +1819,7 @@
                 const cls = matched[idx] ? 'speak-word-correct' : 'speak-word-wrong';
                 return `<span class="${cls}">${escapeHtml(w)}</span>`;
             }).join(' ');
-            document.getElementById("speak-result-sentence").innerHTML = html || escapeHtml(item.en);
+            document.getElementById("speak-result-sentence").innerHTML = html || escapeHtml(target.en);
 
             document.getElementById("speak-score-badge").textContent = `스피킹 정확도 ${percent}점 · ${speakingScoreMessage(percent)}`;
             document.getElementById("speak-result-area").classList.remove("hidden");
@@ -1738,9 +1827,12 @@
 
         // 브라우저 내장 음성 인식(Web Speech API) — Chrome 계열에서 잘 동작하며,
         // 지원하지 않는 브라우저(일부 Safari 등)에서는 안내 후 사용 불가
+        // 문장별 모드: 말이 끝나면 자동 종료(continuous=false). 에피소드 전체 모드는 문장
+        // 사이 잠깐의 침묵에도 끊기지 않도록 continuous=true로 듣다가, 마이크를 다시 눌러야 종료됨
         const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
         let speakRecognition = null;
         let isSpeakingRecording = false;
+        let speakLastTranscript = '';
 
         function stopSpeakingRecognition() {
             if(speakRecognition && isSpeakingRecording) {
@@ -1752,14 +1844,14 @@
         }
 
         document.getElementById("speak-mic-btn").addEventListener("click", async () => {
-            const pool = getSpeakingPool();
-            if(pool.length === 0) return;
+            if(!getCurrentSpeakingTarget()) return;
 
             if(!SpeechRecognitionCtor) {
                 await showAlert("이 브라우저는 음성 인식을 지원하지 않아요. 안드로이드/PC의 Chrome 브라우저에서 이용해주세요.");
                 return;
             }
             if(isSpeakingRecording) { stopSpeakingRecognition(); return; }
+            stopSpeakingSynthesis();
 
             if(!speakRecognition) {
                 speakRecognition = new SpeechRecognitionCtor();
@@ -1767,7 +1859,9 @@
                 speakRecognition.interimResults = false;
                 speakRecognition.maxAlternatives = 1;
                 speakRecognition.onresult = (e) => {
-                    handleSpeakingResult(e.results[0][0].transcript);
+                    let transcript = '';
+                    for(let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript + ' ';
+                    speakLastTranscript = transcript.trim();
                 };
                 speakRecognition.onerror = (e) => {
                     isSpeakingRecording = false;
@@ -1783,11 +1877,19 @@
                 speakRecognition.onend = () => {
                     isSpeakingRecording = false;
                     document.getElementById("speak-mic-btn").classList.remove("recording");
+                    if(speakLastTranscript) {
+                        handleSpeakingResult(speakLastTranscript);
+                        speakLastTranscript = '';
+                    }
                 };
             }
 
+            speakRecognition.continuous = (speakMode === 'episode');
+            speakLastTranscript = '';
             document.getElementById("speak-result-area").classList.add("hidden");
-            document.getElementById("speak-status-text").textContent = "듣고 있어요... 🎤";
+            document.getElementById("speak-status-text").textContent = speakMode === 'episode'
+                ? "듣고 있어요... 🎤 (다 말하면 마이크를 다시 눌러 종료)"
+                : "듣고 있어요... 🎤";
             isSpeakingRecording = true;
             document.getElementById("speak-mic-btn").classList.add("recording");
             try {
@@ -2562,7 +2664,8 @@
             'trash-can': '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
             'microphone': '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
             'chevron-left': '<polyline points="15 18 9 12 15 6"/>',
-            'chevron-right': '<polyline points="9 18 15 12 9 6"/>'
+            'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
+            'volume-high': '<polygon points="4 9 8 9 12 5 12 19 8 15 4 15"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'
         };
         const ICON_SIZE_MAP = {
             'text-[11px]': 11, 'text-[13px]': 13, 'text-xs': 12, 'text-sm': 14,
