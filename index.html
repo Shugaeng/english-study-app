@@ -48,6 +48,8 @@
         .book-select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238B95A1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
         .speak-word-correct { text-decoration: underline; text-decoration-color: #34A853; text-decoration-thickness: 2px; text-underline-offset: 3px; }
         .speak-word-wrong { text-decoration: underline dotted; text-decoration-color: #EA4335; text-decoration-thickness: 2px; text-underline-offset: 3px; color: #C5221F; }
+        .speak-sentence-clickable { cursor: pointer; border-radius: 6px; padding: 2px 3px; transition: background-color 0.15s; }
+        .speak-sentence-clickable:hover, .speak-sentence-clickable:active { background-color: rgba(91, 92, 240, 0.12); }
         #speak-mic-btn.recording { animation: speak-pulse 1.2s ease-in-out infinite; background-color: #EA4335 !important; }
         @keyframes speak-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(234,67,53,0.4); } 50% { box-shadow: 0 0 0 14px rgba(234,67,53,0); } }
     </style>
@@ -652,7 +654,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.7.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.7.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1614,6 +1616,18 @@
             return getSpeakingPool()[speakSentenceIndex] || null;
         }
 
+        // 지금 연습 대상을 이루는 원본 문장들 — 문장별 모드는 현재 문장 1개,
+        // 에피소드 모드는 그 에피소드의 모든 문장. 결과 화면에서 문장 단위로 나눠 보여주고
+        // 클릭하면 그 문장만 다시 들을 수 있게 하는 데 씀
+        function getTargetSentenceGroups() {
+            if(speakMode === 'episode') {
+                const episode = getCurrentSpeakingEpisode();
+                return episode ? episode.sentences : [];
+            }
+            const item = getSpeakingPool()[speakSentenceIndex];
+            return item ? [item] : [];
+        }
+
         function initSpeakingTab() {
             stopSpeakingRecognition();
             stopSpeakingSynthesis();
@@ -1734,6 +1748,7 @@
             }
             document.getElementById("speak-ko-sentence").textContent = target.ko;
             document.getElementById("speak-status-text").textContent = "마이크 버튼을 눌러 말해보세요";
+            updateListenButtonUI();
         }
 
         function moveSpeakingSentence(delta) {
@@ -1749,24 +1764,55 @@
         document.getElementById("speak-next-btn").addEventListener("click", () => moveSpeakingSentence(1));
 
         // 원어민 발음 듣기 — 브라우저 내장 음성 합성(Web Speech API SpeechSynthesis)으로
-        // 지금 연습 대상(문장 또는 에피소드 전체)의 영어 텍스트를 읽어줌
+        // 지금 연습 대상(문장 또는 에피소드 전체, 혹은 결과 화면에서 탭한 문장 하나)의
+        // 영어 텍스트를 읽어줌. 재생 중에는 같은 버튼이 '정지' 버튼으로 바뀜
+        let isSpeakingTTSPlaying = false;
+
+        function updateListenButtonUI() {
+            const listenBtn = document.getElementById("speak-listen-btn");
+            if(!listenBtn) return;
+            if(isSpeakingTTSPlaying) {
+                listenBtn.innerHTML = '<i class="fa-solid fa-stop"></i> 정지';
+                listenBtn.classList.remove("bg-cardGray", "text-textDark");
+                listenBtn.classList.add("bg-red-50", "text-red-500", "border-red-200");
+            } else {
+                listenBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i> 원어민 발음 듣기';
+                listenBtn.classList.remove("bg-red-50", "text-red-500", "border-red-200");
+                listenBtn.classList.add("bg-cardGray", "text-textDark");
+            }
+            renderIcons(listenBtn);
+        }
+
         function stopSpeakingSynthesis() {
             if('speechSynthesis' in window) window.speechSynthesis.cancel();
+            isSpeakingTTSPlaying = false;
+            updateListenButtonUI();
+        }
+
+        // 문장 하나(또는 에피소드 전체 문단)를 읽어줌 — 듣기 버튼과 결과 화면의 문장별
+        // 탭 재생이 공통으로 이 함수를 씀
+        function speakEnglishText(text) {
+            if(!('speechSynthesis' in window) || !text) return;
+            stopSpeakingRecognition();
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'en-US';
+            utter.rate = 0.95;
+            utter.onstart = () => { isSpeakingTTSPlaying = true; updateListenButtonUI(); };
+            utter.onend = () => { isSpeakingTTSPlaying = false; updateListenButtonUI(); };
+            utter.onerror = () => { isSpeakingTTSPlaying = false; updateListenButtonUI(); };
+            window.speechSynthesis.speak(utter);
         }
 
         document.getElementById("speak-listen-btn").addEventListener("click", async () => {
+            if(isSpeakingTTSPlaying) { stopSpeakingSynthesis(); return; } // 재생 중이면 정지 버튼으로 동작
             if(!('speechSynthesis' in window)) {
                 await showAlert("이 브라우저는 음성 합성(듣기 기능)을 지원하지 않아요.");
                 return;
             }
             const target = getCurrentSpeakingTarget();
             if(!target) return;
-            stopSpeakingRecognition();
-            stopSpeakingSynthesis();
-            const utter = new SpeechSynthesisUtterance(target.en);
-            utter.lang = 'en-US';
-            utter.rate = 0.95;
-            window.speechSynthesis.speak(utter);
+            speakEnglishText(target.en);
         });
 
         // 채점용 토큰화: 소문자로 바꾸고 구두점을 제거해 단어만 남김
@@ -1774,10 +1820,24 @@
             return (text || '').toLowerCase().replace(/[^a-z0-9\s']/g, '').split(/\s+/).filter(Boolean);
         }
 
+        // 원문 그대로의 토큰(대소문자·마침표 등 구두점 유지)과, 채점용으로 정리한 토큰을
+        // 같은 개수·순서로 함께 만들어 돌려줌 — 결과 화면에 마침표가 살아있는 원문을 보여주면서도
+        // 채점은 정리된 단어로 할 수 있게 함 (둘을 같은 루프에서 만들어서 개수가 항상 일치함)
+        function tokenizeWithDisplay(text) {
+            const raw = (text || '').trim().split(/\s+/).filter(Boolean);
+            const display = [];
+            const clean = [];
+            raw.forEach(tok => {
+                const c = tok.toLowerCase().replace(/[^a-z0-9']/g, '');
+                if(c) { display.push(tok); clean.push(c); }
+            });
+            return { display, clean };
+        }
+
         // 목표 문장과 내가 말한 문장을 단어 단위로 비교 — LCS(최장 공통 부분수열)로 순서가 좀
         // 달라도 맞은 단어를 최대한 찾아내고, 목표 문장 단어 수 대비 맞은 비율을 점수로 씀
         function scoreSpeaking(targetText, recognizedText) {
-            const targetWords = tokenizeForScoring(targetText);
+            const { display: targetDisplay, clean: targetWords } = tokenizeWithDisplay(targetText);
             const saidWords = tokenizeForScoring(recognizedText);
             const n = targetWords.length, m = saidWords.length;
             const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
@@ -1797,7 +1857,7 @@
             }
             const correctCount = matched.filter(Boolean).length;
             const percent = n > 0 ? Math.round((correctCount / n) * 100) : 0;
-            return { targetWords, matched, percent };
+            return { targetDisplay, matched, percent };
         }
 
         function speakingScoreMessage(percent) {
@@ -1810,16 +1870,32 @@
         function handleSpeakingResult(transcript) {
             const target = getCurrentSpeakingTarget();
             if(!target) return;
-            const { targetWords, matched, percent } = scoreSpeaking(target.en, transcript);
+            const { targetDisplay, matched, percent } = scoreSpeaking(target.en, transcript);
 
-            document.getElementById("speak-status-text").textContent = "인식이 완료됐어요. 결과를 확인해보세요.";
+            document.getElementById("speak-status-text").textContent = "인식이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 그 문장만 다시 들을 수 있어요)";
             document.getElementById("speak-recognized-text").textContent = `"${transcript}"`;
 
-            const html = targetWords.map((w, idx) => {
-                const cls = matched[idx] ? 'speak-word-correct' : 'speak-word-wrong';
-                return `<span class="${cls}">${escapeHtml(w)}</span>`;
-            }).join(' ');
-            document.getElementById("speak-result-sentence").innerHTML = html || escapeHtml(target.en);
+            // 원문 그대로(마침표·대소문자 유지)의 단어들을 원래 문장 경계대로 다시 묶어서,
+            // 문장 하나씩 탭하면 그 문장만 재생되는 클릭 가능한 덩어리로 렌더링함
+            const resultEl = document.getElementById("speak-result-sentence");
+            resultEl.innerHTML = "";
+            const groups = getTargetSentenceGroups();
+            let cursor = 0;
+            groups.forEach((sentence) => {
+                const wordCount = tokenizeWithDisplay(sentence.en).display.length;
+                const wordSpans = [];
+                for(let i = 0; i < wordCount && cursor < targetDisplay.length; i++, cursor++) {
+                    const cls = matched[cursor] ? 'speak-word-correct' : 'speak-word-wrong';
+                    wordSpans.push(`<span class="${cls}">${escapeHtml(targetDisplay[cursor])}</span>`);
+                }
+                const sentenceSpan = document.createElement('span');
+                sentenceSpan.className = 'speak-sentence-clickable';
+                sentenceSpan.innerHTML = wordSpans.join(' ') + ' ';
+                sentenceSpan.title = '탭하면 이 문장만 다시 들어요';
+                sentenceSpan.addEventListener('click', () => speakEnglishText(sentence.en));
+                resultEl.appendChild(sentenceSpan);
+            });
+            if(groups.length === 0) resultEl.textContent = target.en;
 
             document.getElementById("speak-score-badge").textContent = `스피킹 정확도 ${percent}점 · ${speakingScoreMessage(percent)}`;
             document.getElementById("speak-result-area").classList.remove("hidden");
@@ -2665,7 +2741,8 @@
             'microphone': '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
             'chevron-left': '<polyline points="15 18 9 12 15 6"/>',
             'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
-            'volume-high': '<polygon points="4 9 8 9 12 5 12 19 8 15 4 15"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'
+            'volume-high': '<polygon points="4 9 8 9 12 5 12 19 8 15 4 15"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
+            'stop': '<rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" stroke="none"/>'
         };
         const ICON_SIZE_MAP = {
             'text-[11px]': 11, 'text-[13px]': 13, 'text-xs': 12, 'text-sm': 14,
