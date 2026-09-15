@@ -657,7 +657,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.8.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.8.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -680,8 +680,7 @@
         const DEFAULT_SPEAKING_EPISODES = [
             { title: "[1] 후회 제로 러닝",
               ko: "토요일에는 늦잠을 자고 싶었지만, 몸이 일주일 내내 찌뿌둥했기 때문에 대신 러닝을 하러 가기로 했어요. 처음에는 다리가 무거웠지만, 서늘한 공기가 서서히 저를 깨워줬어요. 달리러 나간 덕분에, 죄책감 대신 뿌듯한 기분으로 하루를 열 수 있었어요.",
-              en: "I wanted to sleep in on Saturday, but I chose to go running instead because my body felt stiff all week. At first my legs felt heavy, but the cool air slowly woke me up. Because I went for a run, I started my day feeling proud of myself instead of guilty.",
-              audio: "audio/day1/ep1.mp3" },
+              en: "I wanted to sleep in on Saturday, but I chose to go running instead because my body felt stiff all week. At first my legs felt heavy, but the cool air slowly woke me up. Because I went for a run, I started my day feeling proud of myself instead of guilty." },
             { title: "[2] 단골 카페 잠시 배신",
               ko: "어느 날 아침 단골 카페 앞을 지나는데, 들어가지 않기로 했어요. 그 이유는 줄이 이미 문밖까지 늘어서 있었기 때문인데, 덕분에 골목 안의 더 작은 카페를 찾아내게 됐죠. 그곳은 실내가 조용해서, 집중해야 할 때면 이제 보통 그 카페를 선택해요.",
               en: "One morning I walked past my usual cafe and decided not to go in. The reason is the line was already out the door, so I ended up finding a smaller cafe on a side street. It was quiet inside, so now I usually choose that cafe when I need to focus." },
@@ -820,7 +819,7 @@
             return Array.from({ length: 40 }, (_, i) => ({
                 id: `day${i + 1}`,
                 name: `Day ${i + 1}`,
-                episodes: (i === 0) ? DEFAULT_SPEAKING_EPISODES.map(e => buildSpeakingEpisode(e.title, e.ko, e.en, e.audio)) : []
+                episodes: (i === 0) ? DEFAULT_SPEAKING_EPISODES.map(e => buildSpeakingEpisode(e.title, e.ko, e.en)) : []
             }));
         }
 
