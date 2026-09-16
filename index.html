@@ -686,7 +686,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.11.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.12.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2701,14 +2701,22 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-center gap-2">
-                        <div class="text-xs font-bold text-textDark break-words min-w-0">${epIdx + 1}. ${escapeHtml(ep.title)} ${(ep.vocab && ep.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${ep.vocab.length}개</span>` : ''}</div>
+                        <button class="flex items-center gap-1.5 min-w-0 text-left toggle-speaking-episode-btn">
+                            <i class="fa-solid fa-chevron-right text-[10px] text-textMuted shrink-0 transition-transform"></i>
+                            <div class="text-xs font-bold text-textDark break-words min-w-0">${epIdx + 1}. ${escapeHtml(ep.title)} <span class="font-normal text-textMuted">(문장 ${ep.sentences.length}개)</span> ${(ep.vocab && ep.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${ep.vocab.length}개</span>` : ''}</div>
+                        </button>
                         <div class="flex items-center gap-1 shrink-0">
                             <button class="text-[11px] font-semibold text-primary px-2 py-1 rename-speaking-episode-btn">이름변경</button>
                             <button class="text-textMuted hover:text-red-500 p-1 text-sm delete-speaking-episode-btn"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
-                    ${sentencesHtml}
+                    <div class="speaking-episode-sentences hidden">${sentencesHtml}</div>
                 `;
+
+                card.querySelector(".toggle-speaking-episode-btn").addEventListener("click", () => {
+                    card.querySelector(".speaking-episode-sentences").classList.toggle("hidden");
+                    card.querySelector(".toggle-speaking-episode-btn i").classList.toggle("rotate-90");
+                });
 
                 card.querySelector(".delete-speaking-episode-btn").addEventListener("click", async () => {
                     if(!(await showConfirm(`'${ep.title}' 에피소드를 삭제할까요?`))) return;
