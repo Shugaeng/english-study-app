@@ -686,7 +686,7 @@
 
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.12.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.12.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1913,7 +1913,9 @@
             const display = [];
             const clean = [];
             raw.forEach(tok => {
-                const c = tok.toLowerCase().replace(/[^a-z0-9']/g, '');
+                // 아이폰 등에서 자동으로 곡선형 어퍼스트로피(’)로 바뀌는 경우가 있어, 채점 전에
+                // 직선형(')으로 통일해줌 — 안 그러면 didn't(곡선)와 didn't(직선)가 다른 단어로 처리됨
+                const c = tok.toLowerCase().replace(/[‘’ʼ`´]/g, "'").replace(/[^a-z0-9']/g, '');
                 if(c) { display.push(tok); clean.push(c); }
             });
             return { display, clean };
