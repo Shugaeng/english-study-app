@@ -387,7 +387,10 @@
                             <p id="lyrics-recognized-text" class="text-sm text-textMuted mb-3"></p>
                             <div class="text-xs font-bold text-textMuted mb-2">실제 가사 <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span></div>
                             <p id="lyrics-result-line" class="text-lg leading-relaxed text-textDark mb-4"></p>
-                            <div id="lyrics-score-badge" class="text-center bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold py-2.5 rounded-xl"></div>
+                            <div id="lyrics-score-badge" class="text-center bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold py-2.5 rounded-xl mb-3"></div>
+                            <button id="lyrics-retry-btn" class="w-full bg-textDark text-white font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-rotate-right"></i> 다시 풀기
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -872,7 +875,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.20.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.20.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2343,6 +2346,16 @@
             saveSpeakProgress();
             document.getElementById("speak-result-area").classList.add("hidden");
             document.getElementById("speak-ko-sentence").scrollIntoView({ block: "center", behavior: "smooth" });
+        });
+
+        document.getElementById("lyrics-retry-btn").addEventListener("click", () => {
+            stopLyricsRecognition();
+            stopLyricsSynthesis();
+            document.getElementById("lyrics-write-input").value = "";
+            lyricsDraftText = "";
+            saveLyricsProgress();
+            document.getElementById("lyrics-result-area").classList.add("hidden");
+            document.getElementById("lyrics-ko-line").scrollIntoView({ block: "center", behavior: "smooth" });
         });
 
         // 틀린(인식되지 않은) 단어만 중복 없이 뽑아서, 탭하면 그 단어 하나만 다시 들을 수 있는
