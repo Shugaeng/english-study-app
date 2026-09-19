@@ -286,6 +286,10 @@
                             <h1 class="text-2xl font-bold text-textDark">말하기 연습 <i class="fa-solid fa-microphone text-primary ml-1"></i></h1>
                             <p class="text-textMuted text-sm mt-1">한글 문장을 보고 영어로 말해보세요</p>
                         </div>
+                        <div id="speak-avg-score-wrap" class="hidden text-right shrink-0">
+                            <p id="speak-avg-score-text" class="text-lg font-extrabold text-primary leading-none"></p>
+                            <p id="speak-avg-score-count" class="text-[11px] text-textMuted mt-1"></p>
+                        </div>
                     </div>
                     <select class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark" onchange="changeSpeakingDay(this.value)"></select>
                 </div>
@@ -657,6 +661,7 @@
         const STORAGE_KEY_SPEAKING_DAYS = "english_study_speaking_days_v4";
         const STORAGE_KEY_ACTIVE_SPEAKING_DAY = "english_study_active_speaking_day_v4";
         const STORAGE_KEY_SPEAK_PROGRESS = "english_study_speak_progress_v1"; // 이어서 학습하기 — 마지막으로 보던 에피소드/문장/모드 (이 기기 전용, 클라우드 동기화 대상 아님)
+        const STORAGE_KEY_SPEAK_STATS = "english_study_speak_stats_v1"; // 말하기 채점(스피킹+타이핑) 누적 평균 점수
         const STORAGE_KEY_LOCAL_UPDATED_AT = "english_study_local_updated_at_v1"; // 클라우드 자동 동기화용 — 이 기기 데이터가 마지막으로 바뀐 시각
 
         // ==================================================================
@@ -791,7 +796,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.14.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.15.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1770,6 +1775,38 @@
             }));
         }
 
+        // 말하기 평균 점수 — 스피킹/타이핑 채점을 할 때마다 누적(횟수, 점수 합계)해서
+        // "지금까지 전체 누적 평균 정확도"를 계산함 (음성/타이핑 구분 없이 전부 합산)
+        let speakStats = (function() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_SPEAK_STATS) || "null");
+                if(saved && Number.isInteger(saved.count) && typeof saved.sumPercent === 'number') return saved;
+            } catch(err) { /* 저장된 값이 깨졌으면 0부터 다시 시작 */ }
+            return { count: 0, sumPercent: 0 };
+        })();
+
+        function saveSpeakStats() { localStorage.setItem(STORAGE_KEY_SPEAK_STATS, JSON.stringify(speakStats)); }
+
+        function recordSpeakScore(percent) {
+            speakStats.count++;
+            speakStats.sumPercent += percent;
+            saveSpeakStats();
+            renderSpeakAverageScore();
+        }
+
+        function renderSpeakAverageScore() {
+            const wrap = document.getElementById("speak-avg-score-wrap");
+            if(!wrap) return;
+            if(speakStats.count === 0) {
+                wrap.classList.add("hidden");
+                return;
+            }
+            wrap.classList.remove("hidden");
+            const avg = Math.round(speakStats.sumPercent / speakStats.count);
+            document.getElementById("speak-avg-score-text").textContent = `평균 ${avg}%`;
+            document.getElementById("speak-avg-score-count").textContent = `누적 ${speakStats.count}회`;
+        }
+
         function getSpeakingEpisodes() {
             return getActiveSpeakingDay().episodes;
         }
@@ -2118,6 +2155,7 @@
             const target = getCurrentSpeakingTarget();
             if(!target) return;
             const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(target.en, transcript);
+            recordSpeakScore(percent);
 
             document.getElementById("speak-status-text").textContent = source === 'typed'
                 ? "채점이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 그 문장을 들을 수 있어요)"
@@ -2417,7 +2455,7 @@
                 wordBooks, activeWordBookId,
                 readingBooks, activeReadingBookId,
                 speakingDays, activeSpeakingDayId,
-                stats, userGoals, bqStats, progress,
+                stats, userGoals, bqStats, progress, speakStats,
                 masteredWords: [...masteredWordSet]
             };
         }
@@ -2451,12 +2489,13 @@
             if(data.userGoals) userGoals = data.userGoals;
             if(data.bqStats) bqStats = data.bqStats;
             if(data.progress) progress = data.progress;
+            if(data.speakStats && Number.isInteger(data.speakStats.count) && typeof data.speakStats.sumPercent === 'number') speakStats = data.speakStats;
             masteredWordSet = new Set(Array.isArray(data.masteredWords) ? data.masteredWords : []);
 
             saveWordBooks(); saveActiveWordBookId();
             saveReadingBooks(); saveActiveReadingBookId();
             saveSpeakingDays(); saveActiveSpeakingDayId();
-            saveStats(stats); saveGoals(userGoals); saveBQStats(bqStats); saveProgress(progress); saveMasteredWordSet();
+            saveStats(stats); saveGoals(userGoals); saveBQStats(bqStats); saveProgress(progress); saveMasteredWordSet(); saveSpeakStats();
 
             words = getActiveWordBook().words;
             document.getElementById("input-goal-daily").value = userGoals.daily;
@@ -2471,6 +2510,7 @@
             renderDashboard();
             updateQuizScoreDisplay();
             updateBQScore();
+            renderSpeakAverageScore();
         }
 
         document.getElementById("export-backup-btn").addEventListener("click", () => {
@@ -3060,6 +3100,7 @@
         populateSpeakingDaySelectors();
         renderDashboard();
         updateQuizScoreDisplay();
+        renderSpeakAverageScore();
         initCloudAutoSync();
 
         // ------------------------------------------------------------------
