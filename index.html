@@ -656,6 +656,7 @@
         const STORAGE_KEY_ACTIVE_READINGBOOK = "english_study_active_readingbook_v4";
         const STORAGE_KEY_SPEAKING_DAYS = "english_study_speaking_days_v4";
         const STORAGE_KEY_ACTIVE_SPEAKING_DAY = "english_study_active_speaking_day_v4";
+        const STORAGE_KEY_LOCAL_UPDATED_AT = "english_study_local_updated_at_v1"; // 클라우드 자동 동기화용 — 이 기기 데이터가 마지막으로 바뀐 시각
 
         // ==================================================================
         // Firebase (클라우드 저장) — 아래 firebaseConfig 값을 본인 프로젝트 것으로 채워넣으면
@@ -684,9 +685,96 @@
             console.error('Firebase 초기화 실패:', err);
         }
 
+        // ==================================================================
+        // 클라우드 자동 동기화 — 버튼 없이 기기끼리 알아서 최신 데이터로 맞춰짐
+        // 방식: 이 기기의 데이터가 바뀔 때마다(localStorage.setItem 훅) 시각을 기록해두고
+        // 잠시 후 클라우드에 올림. 반대로 클라우드가 이 기기보다 최신이면(다른 기기에서
+        // 방금 저장한 경우) 실시간 리스너로 감지해서 자동으로 받아옴. 시각 비교로 항상
+        // "더 최신 쪽"이 이기게 해서 오래된 데이터가 새 데이터를 덮어쓰지 않게 함.
+        // ==================================================================
+        let appInitialized = false; // 앱 첫 로딩(마이그레이션 등)에서 발생하는 저장은 동기화 대상에서 제외하기 위한 플래그
+        let applyingRemoteData = false; // 클라우드→로컬 반영 중에는 그 저장을 다시 클라우드로 올리지 않기 위한 플래그
+        let cloudPushTimer = null;
+
+        function getLocalUpdatedAt() { return Number(localStorage.getItem(STORAGE_KEY_LOCAL_UPDATED_AT)) || 0; }
+        function setLocalUpdatedAt(ts) { localStorage.setItem(STORAGE_KEY_LOCAL_UPDATED_AT, String(ts)); }
+
+        const _originalLocalStorageSetItem = localStorage.setItem.bind(localStorage);
+        localStorage.setItem = function(key, value) {
+            _originalLocalStorageSetItem(key, value);
+            if(appInitialized && !applyingRemoteData && key.startsWith("english_study_") && key !== STORAGE_KEY_LOCAL_UPDATED_AT) {
+                setLocalUpdatedAt(Date.now());
+                scheduleCloudPush();
+            }
+        };
+
+        function scheduleCloudPush() {
+            if(!firebaseReady || applyingRemoteData) return;
+            clearTimeout(cloudPushTimer);
+            cloudPushTimer = setTimeout(pushToCloud, 1500);
+        }
+
+        async function pushToCloud() {
+            if(!firebaseReady) return;
+            try {
+                const backup = buildBackupObject();
+                backup.updatedAt = getLocalUpdatedAt() || Date.now();
+                await cloudDocRef.set(backup);
+            } catch(err) {
+                console.error('클라우드 자동 저장 실패:', err);
+            }
+        }
+
+        async function pullFromCloudIfNewer(cloudData) {
+            if(!cloudData) return false;
+            const cloudUpdatedAt = Number(cloudData.updatedAt) || 0;
+            if(cloudUpdatedAt <= getLocalUpdatedAt()) return false; // 이 기기가 이미 최신이거나 같음
+            applyingRemoteData = true;
+            try {
+                await applyBackupData(cloudData);
+                setLocalUpdatedAt(cloudUpdatedAt);
+                showSyncToast("☁️ 다른 기기의 최신 데이터로 동기화했어요");
+                return true;
+            } catch(err) {
+                console.error('클라우드 자동 동기화 실패:', err);
+                return false;
+            } finally {
+                applyingRemoteData = false;
+            }
+        }
+
+        function showSyncToast(message) {
+            const toast = document.createElement("div");
+            toast.textContent = message;
+            toast.style.cssText = "position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(10px);background:#1F2937;color:#fff;font-size:12px;font-weight:600;padding:9px 16px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,0.2);z-index:9999;opacity:0;transition:opacity .25s ease,transform .25s ease;";
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => { toast.style.opacity = "1"; toast.style.transform = "translateX(-50%) translateY(0)"; });
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function initCloudAutoSync() {
+            if(!firebaseReady) { appInitialized = true; return; }
+            cloudDocRef.get().then(async (snap) => {
+                if(getLocalUpdatedAt() === 0) setLocalUpdatedAt(Date.now());
+                if(!snap.exists) {
+                    pushToCloud(); // 클라우드에 아무것도 없으면 이 기기 데이터로 최초 생성
+                } else {
+                    const pulled = await pullFromCloudIfNewer(snap.data());
+                    if(!pulled) pushToCloud(); // 클라우드가 최신이 아니었다면(=이 기기가 최신) 이 기기 데이터를 클라우드에 반영
+                }
+            }).catch(err => {
+                console.error('클라우드 초기 동기화 실패:', err);
+            }).finally(() => {
+                appInitialized = true;
+                cloudDocRef.onSnapshot(snap => pullFromCloudIfNewer(snap.data()));
+            });
+        }
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.12.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.13.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2348,13 +2436,18 @@
         // ==================================================================
         // 클라우드 동기화 (Firebase Firestore) — firebaseConfig를 채워야 동작함
         // ==================================================================
+        // 참고: 기기 간 동기화는 이제 자동으로 이뤄짐(initCloudAutoSync). 아래 버튼들은
+        // "지금 당장 강제로" 올리거나/받아오고 싶을 때 쓰는 수동 백업 용도로 남겨둠.
         document.getElementById("cloud-save-btn").addEventListener("click", async () => {
             if(!firebaseReady) {
                 await showAlert("아직 Firebase 설정이 안 되어 있어요. 코드 상단의 firebaseConfig를 본인 프로젝트 값으로 채워주세요.");
                 return;
             }
             try {
-                await cloudDocRef.set(buildBackupObject());
+                setLocalUpdatedAt(Date.now());
+                const backup = buildBackupObject();
+                backup.updatedAt = getLocalUpdatedAt();
+                await cloudDocRef.set(backup);
                 await showAlert("클라우드에 저장했습니다!");
             } catch(err) {
                 await showAlert("클라우드 저장 중 오류가 발생했습니다: " + err.message);
@@ -2374,7 +2467,13 @@
                 }
                 const ok = await showConfirm("클라우드 데이터를 불러오면 이 기기의 현재 데이터를 덮어씁니다.\n계속할까요?");
                 if(!ok) return;
-                await applyBackupData(snap.data());
+                applyingRemoteData = true;
+                try {
+                    await applyBackupData(snap.data());
+                    setLocalUpdatedAt(Number(snap.data().updatedAt) || Date.now());
+                } finally {
+                    applyingRemoteData = false;
+                }
                 await showAlert("클라우드에서 불러왔습니다.");
             } catch(err) {
                 await showAlert("클라우드 불러오기 중 오류가 발생했습니다: " + err.message);
@@ -2887,6 +2986,7 @@
         populateSpeakingDaySelectors();
         renderDashboard();
         updateQuizScoreDisplay();
+        initCloudAutoSync();
 
         // ------------------------------------------------------------------
         // 아이콘: Font Awesome 웹폰트 대신 인라인 SVG 사용 (네트워크 차단 환경에서도 항상 표시됨)
