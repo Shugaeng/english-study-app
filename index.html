@@ -352,6 +352,10 @@
                     </div>
 
                     <div id="lyrics-content" class="hidden">
+                        <div class="flex bg-cardGray rounded-xl p-1 mb-4">
+                            <button id="lyrics-mode-line-btn" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">한 줄씩</button>
+                            <button id="lyrics-mode-song-btn" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">곡 전체 테스트</button>
+                        </div>
                         <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-6">
                             <div class="flex justify-center items-center text-xs text-textMuted font-medium mb-3">
                                 <span id="lyrics-progress-text">0 / 0</span>
@@ -881,7 +885,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.21.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.22.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2478,6 +2482,7 @@
         // ==================================================================
         let lyricsLineIndex = 0;
         let lyricsDraftText = "";
+        let lyricsMode = 'line'; // 'line' = 한 줄씩, 'song' = 곡 전체 한 번에 테스트
         let editingLyricsSongId = null; // 곡 추가/수정 모달이 지금 어느 모드인지 — null이면 새 곡 추가, 값이 있으면 그 곡 수정
 
         (function restoreLyricsProgress() {
@@ -2486,6 +2491,7 @@
                 if(saved && saved.songId === activeLyricsSongId) {
                     lyricsLineIndex = Number.isInteger(saved.lineIndex) ? saved.lineIndex : 0;
                     lyricsDraftText = typeof saved.draftText === 'string' ? saved.draftText : "";
+                    lyricsMode = saved.mode === 'song' ? 'song' : 'line';
                 }
             } catch(err) { /* 저장된 값이 깨졌으면 기본값으로 시작 */ }
         })();
@@ -2494,13 +2500,31 @@
             localStorage.setItem(STORAGE_KEY_LYRICS_PROGRESS, JSON.stringify({
                 songId: activeLyricsSongId,
                 lineIndex: lyricsLineIndex,
-                draftText: lyricsDraftText
+                draftText: lyricsDraftText,
+                mode: lyricsMode
             }));
         }
 
         function getLyricsLines() {
             const song = getActiveLyricsSong();
             return song ? song.lines : [];
+        }
+
+        function isWholeSongMode() {
+            return lyricsMode === 'song';
+        }
+
+        // 지금 연습 대상 — 한 줄씩 모드면 현재 줄 하나, 곡 전체 모드면 모든 줄을 이어붙인 것
+        function getCurrentLyricsTarget() {
+            const lines = getLyricsLines();
+            if(lines.length === 0) return null;
+            if(isWholeSongMode()) {
+                return {
+                    ko: lines.map(l => l.ko || '').filter(Boolean).join(' '),
+                    en: lines.map(l => l.en).join(' ')
+                };
+            }
+            return lines[lyricsLineIndex] || null;
         }
 
         function populateLyricsSongSelectors() {
@@ -2540,8 +2564,34 @@
             contentEl.classList.remove("hidden");
             const lines = getLyricsLines();
             if(lyricsLineIndex >= lines.length || lyricsLineIndex < 0) lyricsLineIndex = 0;
+            renderLyricsModeToggle();
             renderLyricsLine();
         }
+
+        // 한 줄씩 / 곡 전체 테스트 모드 전환 버튼 UI 갱신
+        function renderLyricsModeToggle() {
+            const lineBtn = document.getElementById("lyrics-mode-line-btn");
+            const songBtn = document.getElementById("lyrics-mode-song-btn");
+            const activeCls = ["bg-white", "text-primary", "shadow-sm"];
+            const inactiveCls = ["text-textMuted"];
+            lineBtn.classList.remove(...activeCls, ...inactiveCls);
+            songBtn.classList.remove(...activeCls, ...inactiveCls);
+            lineBtn.classList.add(...(lyricsMode === 'line' ? activeCls : inactiveCls));
+            songBtn.classList.add(...(lyricsMode === 'song' ? activeCls : inactiveCls));
+        }
+
+        function changeLyricsMode(mode) {
+            if(mode === lyricsMode) return;
+            stopLyricsRecognition();
+            stopLyricsSynthesis();
+            lyricsMode = mode;
+            lyricsDraftText = "";
+            saveLyricsProgress();
+            renderLyricsModeToggle();
+            renderLyricsLine();
+        }
+        document.getElementById("lyrics-mode-line-btn").addEventListener("click", () => changeLyricsMode('line'));
+        document.getElementById("lyrics-mode-song-btn").addEventListener("click", () => changeLyricsMode('song'));
 
         function renderLyricsLine() {
             document.getElementById("lyrics-result-area").classList.add("hidden");
@@ -2550,6 +2600,12 @@
             const listenBtn = document.getElementById("lyrics-listen-btn");
             const writeInput = document.getElementById("lyrics-write-input");
             const writeSubmitBtn = document.getElementById("lyrics-write-submit-btn");
+            const prevBtn = document.getElementById("lyrics-prev-btn");
+            const nextBtn = document.getElementById("lyrics-next-btn");
+
+            // 한 줄씩 모드에서만 이전/다음 버튼 표시 (곡 전체 모드는 이동할 줄이 따로 없음)
+            prevBtn.classList.toggle("invisible", isWholeSongMode());
+            nextBtn.classList.toggle("invisible", isWholeSongMode());
 
             if(lines.length === 0) {
                 document.getElementById("lyrics-progress-text").textContent = "0 / 0";
@@ -2567,9 +2623,11 @@
             writeInput.disabled = false;
             writeSubmitBtn.disabled = false; writeSubmitBtn.classList.remove("opacity-40");
 
-            const line = lines[lyricsLineIndex];
-            const koText = line.ko && line.ko.trim() ? line.ko : "(번역 없음 — 원어민 발음 듣기로 확인해보세요)";
-            document.getElementById("lyrics-progress-text").textContent = `${lyricsLineIndex + 1} / ${lines.length}`;
+            const target = getCurrentLyricsTarget();
+            const koText = target.ko && target.ko.trim() ? target.ko : "(번역 없음 — 원어민 발음 듣기로 확인해보세요)";
+            document.getElementById("lyrics-progress-text").textContent = isWholeSongMode()
+                ? "곡 전체"
+                : `${lyricsLineIndex + 1} / ${lines.length}`;
             document.getElementById("lyrics-ko-line").textContent = koText;
             document.getElementById("lyrics-write-ko-hint").textContent = koText; // 키보드에 위쪽 문장이 가려질 때를 대비해 입력창 바로 위에도 한 번 더 표시
             writeInput.value = lyricsDraftText;
@@ -2578,6 +2636,7 @@
         }
 
         function moveLyricsLine(delta) {
+            if(lyricsMode !== 'line') return; // 곡 전체 모드에서는 줄 이동 없음
             stopLyricsRecognition();
             stopLyricsSynthesis();
             const lines = getLyricsLines();
@@ -2629,10 +2688,9 @@
                 await showAlert("이 브라우저는 음성 합성(듣기 기능)을 지원하지 않아요.");
                 return;
             }
-            const lines = getLyricsLines();
-            const line = lines[lyricsLineIndex];
-            if(!line) return;
-            speakLyricsLineText(line.en);
+            const target = getCurrentLyricsTarget();
+            if(!target) return;
+            speakLyricsLineText(target.en);
         });
 
         // 마이크로 부르기 — 말하기 탭과 동일한 Web Speech API 인식 방식(문장별 모드 기준)을
@@ -2652,8 +2710,7 @@
         }
 
         document.getElementById("lyrics-mic-btn").addEventListener("click", async () => {
-            const lines = getLyricsLines();
-            if(!lines[lyricsLineIndex]) return;
+            if(!getCurrentLyricsTarget()) return;
 
             if(!LyricsSpeechRecognitionCtor) {
                 await showAlert("이 브라우저는 음성 인식을 지원하지 않아요. 안드로이드/PC의 Chrome 브라우저에서 이용해주세요.");
@@ -2667,7 +2724,6 @@
                 lyricsRecognition.lang = 'en-US';
                 lyricsRecognition.interimResults = false;
                 lyricsRecognition.maxAlternatives = 1;
-                lyricsRecognition.continuous = false;
                 lyricsRecognition.onresult = (e) => {
                     let transcript = '';
                     for(let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript + ' ';
@@ -2694,9 +2750,12 @@
                 };
             }
 
+            lyricsRecognition.continuous = isWholeSongMode();
             lyricsLastTranscript = '';
             document.getElementById("lyrics-result-area").classList.add("hidden");
-            document.getElementById("lyrics-status-text").textContent = "듣고 있어요... 🎤";
+            document.getElementById("lyrics-status-text").textContent = isWholeSongMode()
+                ? "듣고 있어요... 🎤 (다 부르면 마이크를 다시 눌러 종료)"
+                : "듣고 있어요... 🎤";
             isLyricsRecording = true;
             document.getElementById("lyrics-mic-btn").classList.add("recording");
             try {
@@ -2710,9 +2769,7 @@
 
         // 직접 입력해서 확인 — 말하기 탭과 동일하게 채점 로직(scoreSpeaking)을 재사용
         document.getElementById("lyrics-write-submit-btn").addEventListener("click", async () => {
-            const lines = getLyricsLines();
-            const line = lines[lyricsLineIndex];
-            if(!line) return;
+            if(!getCurrentLyricsTarget()) return;
             const typed = document.getElementById("lyrics-write-input").value.trim();
             if(!typed) {
                 await showAlert("가사를 입력해주세요.");
@@ -2739,10 +2796,9 @@
 
         // 채점 결과 표시 — 말하기 탭의 scoreSpeaking()과 단어별 강조 스타일을 그대로 재사용
         function handleLyricsResult(transcript, source) {
-            const lines = getLyricsLines();
-            const line = lines[lyricsLineIndex];
-            if(!line) return;
-            const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(line.en, transcript);
+            const target = getCurrentLyricsTarget();
+            if(!target) return;
+            const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(target.en, transcript);
 
             document.getElementById("lyrics-status-text").textContent = source === 'typed'
                 ? "채점이 완료됐어요. 결과를 확인해보세요."
