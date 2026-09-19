@@ -711,7 +711,15 @@
         function scheduleCloudPush() {
             if(!firebaseReady || applyingRemoteData) return;
             clearTimeout(cloudPushTimer);
-            cloudPushTimer = setTimeout(pushToCloud, 1500);
+            cloudPushTimer = setTimeout(flushCloudPush, 800);
+        }
+
+        // 예약된 클라우드 저장을 지금 즉시 실행(디바운스 대기를 건너뜀)
+        function flushCloudPush() {
+            if(!cloudPushTimer) return;
+            clearTimeout(cloudPushTimer);
+            cloudPushTimer = null;
+            pushToCloud();
         }
 
         async function pushToCloud() {
@@ -773,8 +781,16 @@
             });
         }
 
+        // 탭이 백그라운드로 가거나 앱이 종료되기 직전에, 예약돼 있던 클라우드 저장이 있으면
+        // 디바운스 대기 없이 바로 실행함 — 안 그러면(특히 모바일에서 저장 직후 바로 앱을
+        // 나갈 때) 타이머가 실행되기 전에 페이지가 정지/종료되어 변경 사항이 누락될 수 있음
+        document.addEventListener("visibilitychange", () => {
+            if(document.visibilityState === "hidden") flushCloudPush();
+        });
+        window.addEventListener("pagehide", flushCloudPush);
+
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.13.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.13.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
