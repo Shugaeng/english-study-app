@@ -357,18 +357,14 @@
                                 <span id="lyrics-progress-text">0 / 0</span>
                             </div>
 
-                            <div id="lyrics-line-wrap" class="min-h-[70px] flex items-center justify-center py-3">
-                                <p id="lyrics-line-text" class="text-xl font-bold text-textDark text-center leading-relaxed"></p>
-                            </div>
+                            <p id="lyrics-ko-line" class="text-xl font-bold text-textDark text-center leading-relaxed py-4"></p>
 
-                            <button id="lyrics-reveal-btn" class="w-full bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl mb-2 flex items-center justify-center gap-1.5">
-                                <i class="fa-solid fa-eye"></i> 가사 보기
-                            </button>
                             <button id="lyrics-listen-btn" class="w-full bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl mb-3 flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-volume-high"></i> 원어민 발음 듣기
                             </button>
 
-                            <textarea id="lyrics-write-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-3 text-sm font-medium text-textDark resize-none" placeholder="기억나는 대로 가사를 입력해보세요..."></textarea>
+                            <p id="lyrics-write-ko-hint" class="text-sm font-bold text-textDark bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 mb-2 leading-relaxed"></p>
+                            <textarea id="lyrics-write-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-3 text-sm font-medium text-textDark resize-none" placeholder="한글 해석을 보고 영어 가사를 입력해보세요..."></textarea>
                             <button id="lyrics-write-submit-btn" class="w-full mt-2 bg-primary text-white font-bold py-3 rounded-xl shadow-md shadow-primary/30 active:scale-95 transition-transform">채점하기</button>
 
                             <div id="lyrics-status-text" class="text-center text-xs text-textMuted min-h-[16px] mt-3 mb-1"></div>
@@ -509,13 +505,21 @@
                     <div class="bg-white rounded-2xl border border-divider p-5 shadow-card mb-6">
                         <div class="flex justify-between items-center mb-3">
                             <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-music text-primary"></i> 가사 관리</h2>
-                            <button id="new-lyrics-song-btn" class="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full active:scale-95 transition-transform">+ 곡 추가</button>
                         </div>
-                        <p class="text-[11px] text-textMuted mb-3">곡을 추가하면 줄바꿈 기준으로 가사가 자동으로 나뉘어, 가사 탭에서 한 줄씩 암기 연습을 할 수 있어요.</p>
+                        <p class="text-[11px] text-textMuted mb-3">곡을 추가하면 줄바꿈 기준으로 가사가 자동으로 나뉘어, 가사 탭에서 한글 해석을 보며 한 줄씩 암기 연습을 할 수 있어요.</p>
                         <select class="lyrics-song-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeLyricsSong(this.value)"></select>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <button id="new-lyrics-song-btn" class="bg-primary text-white text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">곡 추가</button>
+                            <button id="import-lyrics-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">가져오기</button>
+                        </div>
                         <div class="grid grid-cols-2 gap-2 mb-3">
                             <button id="rename-lyrics-song-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">이름변경</button>
                             <button id="delete-lyrics-song-btn" class="bg-red-50 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">삭제</button>
+                        </div>
+                        <input type="file" id="lyrics-file-input" accept=".json" style="display:none;">
+                        <div class="flex gap-3 text-[11px] text-textMuted mb-3">
+                            <span>대량 업로드 양식:</span>
+                            <button id="download-lyrics-json-btn" class="underline font-semibold text-primary">JSON</button>
                         </div>
                         <div id="lyrics-manage-list" class="flex flex-col gap-2"></div>
                     </div>
@@ -644,8 +648,12 @@
                         <input type="text" id="new-lyrics-title-input" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark" placeholder="예: Perfect - Ed Sheeran">
                     </div>
                     <div>
-                        <label class="text-xs text-textMuted font-medium block mb-1">가사 (한 줄씩 줄바꿈으로 붙여넣으면 자동으로 나뉘어요)</label>
-                        <textarea id="new-lyrics-lines-input" rows="8" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I found a love, for me&#10;Darling, just dive right in&#10;And follow my lead"></textarea>
+                        <label class="text-xs text-textMuted font-medium block mb-1">영어 가사 (한 줄씩 줄바꿈으로 붙여넣으면 자동으로 나뉘어요)</label>
+                        <textarea id="new-lyrics-lines-input" rows="6" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I found a love, for me&#10;Darling, just dive right in&#10;And follow my lead"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">한글 번역 (선택, 영어와 같은 줄 수로 줄바꿈해서 입력 — 연습 중 화면에 뜨는 힌트예요)</label>
+                        <textarea id="new-lyrics-ko-input" rows="6" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: 사랑을 찾았어요, 나를 위한&#10;그대여, 그냥 뛰어들어요&#10;내 리드를 따라와요"></textarea>
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -867,7 +875,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.18.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.19.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1069,12 +1077,16 @@
 
         // 가사(노래) 데이터 — 사용자가 자유롭게 곡을 추가/삭제하는 목록. 한글 번역 없이 영어
         // 원문 가사만 줄바꿈 기준으로 나눠 저장 — 가사를 통째로 암기하는 용도라 번역은 불필요
-        function buildLyricsSong(title, lyricsText) {
-            const lines = (lyricsText || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        // koText(한글 번역)는 영어와 같은 줄 수로 줄바꿈되어 있다고 가정하고 순서대로 짝지음.
+        // 번역이 없거나 줄 수가 안 맞으면 있는 만큼만 짝짓고 나머지는 번역 없이 둠(연습 화면에서
+        // "번역 없음" 안내로 대체됨) — 말하기 탭과 달리 마침표가 아니라 줄바꿈 기준으로 나눔
+        function buildLyricsSong(title, enText, koText) {
+            const enLines = (enText || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const koLines = (koText || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
             return {
                 id: uid(),
                 title: (title || '').trim() || '제목 없는 곡',
-                lines: lines.map(en => ({ id: uid(), en }))
+                lines: enLines.map((en, idx) => ({ id: uid(), en, ko: koLines[idx] || '' }))
             };
         }
 
@@ -2407,13 +2419,11 @@
         });
 
         // ==================================================================
-        // 가사(Lyrics) 탭 — 노래 가사를 한 줄씩 외워서 마이크로 부르거나 타이핑해서 맞는지
-        // 확인. 말하기 탭과 달리 한글 번역 없이 영어 원문만 다루고, 기본으로 가사를 가려둔
-        // 채 기억나는 대로 시도해보고("가사 보기"로 필요할 때만 확인) 채점하는 방식
+        // 가사(Lyrics) 탭 — 말하기 탭과 같은 방식: 한글 번역을 보면서 그 줄의 영어 가사를
+        // 마이크로 부르거나 타이핑해서 맞는지 확인. 번역은 곡 등록 시 함께 입력해둔 것을 씀
         // ==================================================================
         let lyricsLineIndex = 0;
         let lyricsDraftText = "";
-        let lyricsRevealed = false;
 
         (function restoreLyricsProgress() {
             try {
@@ -2452,7 +2462,6 @@
             saveActiveLyricsSongId();
             lyricsLineIndex = 0;
             lyricsDraftText = "";
-            lyricsRevealed = false;
             saveLyricsProgress();
             populateLyricsSongSelectors();
 
@@ -2479,13 +2488,6 @@
             renderLyricsLine();
         }
 
-        function updateLyricsRevealButtonUI() {
-            const btn = document.getElementById("lyrics-reveal-btn");
-            if(!btn) return;
-            btn.innerHTML = lyricsRevealed ? '<i class="fa-solid fa-eye-slash"></i> 가사 가리기' : '<i class="fa-solid fa-eye"></i> 가사 보기';
-            renderIcons(btn);
-        }
-
         function renderLyricsLine() {
             document.getElementById("lyrics-result-area").classList.add("hidden");
             const lines = getLyricsLines();
@@ -2496,7 +2498,8 @@
 
             if(lines.length === 0) {
                 document.getElementById("lyrics-progress-text").textContent = "0 / 0";
-                document.getElementById("lyrics-line-text").textContent = "이 곡에는 가사가 없어요";
+                document.getElementById("lyrics-ko-line").textContent = "이 곡에는 가사가 없어요";
+                document.getElementById("lyrics-write-ko-hint").textContent = "";
                 document.getElementById("lyrics-status-text").textContent = "설정 탭에서 가사를 확인해주세요";
                 micBtn.disabled = true; micBtn.classList.add("opacity-40");
                 listenBtn.disabled = true; listenBtn.classList.add("opacity-40");
@@ -2509,20 +2512,15 @@
             writeInput.disabled = false;
             writeSubmitBtn.disabled = false; writeSubmitBtn.classList.remove("opacity-40");
 
+            const line = lines[lyricsLineIndex];
+            const koText = line.ko && line.ko.trim() ? line.ko : "(번역 없음 — 원어민 발음 듣기로 확인해보세요)";
             document.getElementById("lyrics-progress-text").textContent = `${lyricsLineIndex + 1} / ${lines.length}`;
-            document.getElementById("lyrics-line-text").textContent = lyricsRevealed
-                ? lines[lyricsLineIndex].en
-                : "🔒 가려져 있어요 — 기억나는 대로 불러보거나 입력해보세요";
+            document.getElementById("lyrics-ko-line").textContent = koText;
+            document.getElementById("lyrics-write-ko-hint").textContent = koText; // 키보드에 위쪽 문장이 가려질 때를 대비해 입력창 바로 위에도 한 번 더 표시
             writeInput.value = lyricsDraftText;
             document.getElementById("lyrics-status-text").textContent = "마이크로 부르거나 아래에 직접 입력해서 암기를 확인해보세요";
-            updateLyricsRevealButtonUI();
             updateLyricsListenButtonUI();
         }
-
-        document.getElementById("lyrics-reveal-btn").addEventListener("click", () => {
-            lyricsRevealed = !lyricsRevealed;
-            renderLyricsLine();
-        });
 
         function moveLyricsLine(delta) {
             stopLyricsRecognition();
@@ -2531,7 +2529,6 @@
             if(lines.length === 0) return;
             lyricsLineIndex = (lyricsLineIndex + delta + lines.length) % lines.length;
             lyricsDraftText = "";
-            lyricsRevealed = false;
             saveLyricsProgress();
             renderLyricsLine();
         }
@@ -2707,10 +2704,6 @@
 
             document.getElementById("lyrics-score-badge").textContent = `${percent}점 — ${speakingScoreMessage(percent)}`;
             document.getElementById("lyrics-result-area").classList.remove("hidden");
-
-            lyricsRevealed = true; // 채점 후엔 실제 가사를 펼쳐서 비교하기 쉽게 함
-            document.getElementById("lyrics-line-text").textContent = line.en;
-            updateLyricsRevealButtonUI();
         }
 
         // ==================================================================
@@ -2879,7 +2872,6 @@
                     ? data.activeLyricsSongId : (lyricsSongs[0] ? lyricsSongs[0].id : null);
                 lyricsLineIndex = 0;
                 lyricsDraftText = "";
-                lyricsRevealed = false;
                 saveLyricsProgress();
             }
             if(data.stats) stats = data.stats;
@@ -3473,7 +3465,10 @@
                 const item = document.createElement("div");
                 item.className = "flex justify-between items-start gap-2 bg-cardGray border border-divider rounded-lg p-2.5";
                 item.innerHTML = `
-                    <div class="text-xs font-semibold text-textDark break-words min-w-0">${escapeHtml(line.en)}</div>
+                    <div class="min-w-0">
+                        <div class="text-xs font-semibold text-textDark break-words">${escapeHtml(line.en)}</div>
+                        ${line.ko ? `<div class="text-[11px] text-primary mt-0.5 break-words">${escapeHtml(line.ko)}</div>` : ''}
+                    </div>
                     <button class="text-textMuted hover:text-red-500 p-1 text-sm shrink-0 delete-lyrics-line-btn"><i class="fa-solid fa-trash-can"></i></button>
                 `;
                 item.querySelector(".delete-lyrics-line-btn").addEventListener("click", () => {
@@ -3490,6 +3485,7 @@
         document.getElementById("new-lyrics-song-btn").addEventListener("click", () => {
             document.getElementById("new-lyrics-title-input").value = "";
             document.getElementById("new-lyrics-lines-input").value = "";
+            document.getElementById("new-lyrics-ko-input").value = "";
             document.getElementById("add-lyrics-modal").style.display = "flex";
         });
         document.getElementById("close-lyrics-modal-btn").addEventListener("click", () => {
@@ -3498,11 +3494,12 @@
         document.getElementById("save-new-lyrics-btn").addEventListener("click", async () => {
             const titleVal = document.getElementById("new-lyrics-title-input").value.trim();
             const linesVal = document.getElementById("new-lyrics-lines-input").value;
+            const koVal = document.getElementById("new-lyrics-ko-input").value;
             if(!titleVal) {
                 await showAlert("곡 제목을 입력해주세요.");
                 return;
             }
-            const song = buildLyricsSong(titleVal, linesVal);
+            const song = buildLyricsSong(titleVal, linesVal, koVal);
             if(song.lines.length === 0) {
                 await showAlert("가사를 한 줄 이상 입력해주세요.");
                 return;
@@ -3513,7 +3510,6 @@
             saveActiveLyricsSongId();
             lyricsLineIndex = 0;
             lyricsDraftText = "";
-            lyricsRevealed = false;
             saveLyricsProgress();
             document.getElementById("add-lyrics-modal").style.display = "none";
             populateLyricsSongSelectors();
@@ -3540,11 +3536,53 @@
             saveActiveLyricsSongId();
             lyricsLineIndex = 0;
             lyricsDraftText = "";
-            lyricsRevealed = false;
             saveLyricsProgress();
             populateLyricsSongSelectors();
             renderLyricsManageList();
         });
+
+        // title/en/ko 키를 가진 JSON 배열 텍스트를 파싱해 각 항목을 하나의 곡으로 만듦
+        // (en/ko는 줄바꿈 기준으로 나뉘며, 같은 줄 수로 순서대로 짝지어짐)
+        function parseLyricsFile(text) {
+            const data = JSON.parse(text.replace(/^﻿/, ''));
+            if(!Array.isArray(data)) throw new Error("JSON 배열([]) 형식이어야 합니다.");
+            return data.map((item) => {
+                const title = String(item.title ?? item['제목'] ?? '제목 없는 곡').trim();
+                const en = String(item.en ?? item['영어'] ?? '').trim();
+                const ko = String(item.ko ?? item['한글'] ?? '').trim();
+                return buildLyricsSong(title, en, ko);
+            }).filter(song => song.lines.length > 0);
+        }
+
+        document.getElementById("import-lyrics-btn").addEventListener("click", () => {
+            document.getElementById("lyrics-file-input").click();
+        });
+        document.getElementById("lyrics-file-input").addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const parsed = parseLyricsFile(ev.target.result);
+                    if(parsed.length === 0) { await showAlert("가져올 곡을 찾지 못했습니다. 파일 형식을 확인해주세요."); return; }
+                    lyricsSongs.push(...parsed);
+                    activeLyricsSongId = parsed[0].id;
+                    saveLyricsSongs();
+                    saveActiveLyricsSongId();
+                    lyricsLineIndex = 0;
+                    lyricsDraftText = "";
+                    saveLyricsProgress();
+                    populateLyricsSongSelectors();
+                    renderLyricsManageList();
+                    await showAlert(`곡 ${parsed.length}개를 추가했습니다.`);
+                } catch(err) {
+                    await showAlert("파일을 읽는 중 오류가 발생했습니다: " + err.message);
+                }
+                e.target.value = "";
+            };
+            reader.readAsText(file, 'utf-8');
+        });
+        document.getElementById("download-lyrics-json-btn").addEventListener("click", () => downloadTemplate('lyrics-json'));
 
         // 대량 업로드용 예시 템플릿 다운로드
         function downloadTemplate(type) {
@@ -3580,6 +3618,15 @@
                     }
                 ], null, 2);
                 filename = "말하기_템플릿.json"; mime = "application/json;charset=utf-8";
+            } else if(type === 'lyrics-json') {
+                content = JSON.stringify([
+                    {
+                        title: "Perfect - Ed Sheeran",
+                        en: "I found a love for me\nDarling just dive right in",
+                        ko: "사랑을 찾았어요, 나를 위한\n그대여, 그냥 뛰어들어요"
+                    }
+                ], null, 2);
+                filename = "가사_템플릿.json"; mime = "application/json;charset=utf-8";
             } else { return; }
 
             const blob = new Blob(["\uFEFF" + content], { type: mime });
