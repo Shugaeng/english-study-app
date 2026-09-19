@@ -361,13 +361,13 @@
                                 <span id="lyrics-progress-text">0 / 0</span>
                             </div>
 
-                            <p id="lyrics-ko-line" class="text-xl font-bold text-textDark text-center leading-relaxed py-4"></p>
+                            <p id="lyrics-ko-line" class="text-xl font-bold text-textDark text-center leading-relaxed py-4 whitespace-pre-line"></p>
 
                             <button id="lyrics-listen-btn" class="w-full bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl mb-3 flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-volume-high"></i> 원어민 발음 듣기
                             </button>
 
-                            <p id="lyrics-write-ko-hint" class="text-sm font-bold text-textDark bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 mb-2 leading-relaxed"></p>
+                            <p id="lyrics-write-ko-hint" class="text-sm font-bold text-textDark bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 mb-2 leading-relaxed whitespace-pre-line"></p>
                             <textarea id="lyrics-write-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-3 text-sm font-medium text-textDark resize-none" placeholder="한글 해석을 보고 영어 가사를 입력해보세요..."></textarea>
                             <button id="lyrics-write-submit-btn" class="w-full mt-2 bg-primary text-white font-bold py-3 rounded-xl shadow-md shadow-primary/30 active:scale-95 transition-transform">채점하기</button>
 
@@ -885,7 +885,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.22.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.22.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2520,7 +2520,7 @@
             if(lines.length === 0) return null;
             if(isWholeSongMode()) {
                 return {
-                    ko: lines.map(l => l.ko || '').filter(Boolean).join(' '),
+                    ko: lines.map(l => l.ko || '').filter(Boolean).join('\n'),
                     en: lines.map(l => l.en).join(' ')
                 };
             }
