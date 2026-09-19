@@ -512,7 +512,8 @@
                             <button id="new-lyrics-song-btn" class="bg-primary text-white text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">곡 추가</button>
                             <button id="import-lyrics-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">가져오기</button>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 mb-3">
+                        <div class="grid grid-cols-3 gap-2 mb-3">
+                            <button id="edit-lyrics-song-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">가사/번역 수정</button>
                             <button id="rename-lyrics-song-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">이름변경</button>
                             <button id="delete-lyrics-song-btn" class="bg-red-50 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">삭제</button>
                         </div>
@@ -641,19 +642,15 @@
         <!-- 가사 곡 추가 모달 -->
         <div id="add-lyrics-modal" class="absolute inset-0 bg-black/40 z-50 flex items-center justify-center p-6" style="display:none;">
             <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-                <h3 class="text-lg font-bold text-textDark mb-4">새 곡 추가하기</h3>
+                <h3 class="text-lg font-bold text-textDark mb-4" id="lyrics-modal-title">새 곡 추가하기</h3>
                 <div class="space-y-3 mb-5">
                     <div>
                         <label class="text-xs text-textMuted font-medium block mb-1">곡 제목</label>
-                        <input type="text" id="new-lyrics-title-input" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark" placeholder="예: Perfect - Ed Sheeran">
+                        <input type="text" id="new-lyrics-title-input" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark" placeholder="예: 곡 제목 - 아티스트">
                     </div>
                     <div>
-                        <label class="text-xs text-textMuted font-medium block mb-1">영어 가사 (한 줄씩 줄바꿈으로 붙여넣으면 자동으로 나뉘어요)</label>
-                        <textarea id="new-lyrics-lines-input" rows="6" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I found a love, for me&#10;Darling, just dive right in&#10;And follow my lead"></textarea>
-                    </div>
-                    <div>
-                        <label class="text-xs text-textMuted font-medium block mb-1">한글 번역 (선택, 영어와 같은 줄 수로 줄바꿈해서 입력 — 연습 중 화면에 뜨는 힌트예요)</label>
-                        <textarea id="new-lyrics-ko-input" rows="6" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: 사랑을 찾았어요, 나를 위한&#10;그대여, 그냥 뛰어들어요&#10;내 리드를 따라와요"></textarea>
+                        <label class="text-xs text-textMuted font-medium block mb-1">가사 (영어 한 줄 + 바로 아래 한글 번역 한 줄씩 번갈아 붙여넣으면, 한글이 포함된 줄을 자동으로 구분해서 나눠요)</label>
+                        <textarea id="new-lyrics-lines-input" rows="10" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: English line one&#10;한글 번역 첫 줄&#10;English line two&#10;한글 번역 둘째 줄"></textarea>
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -875,7 +872,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.19.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.20.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1087,6 +1084,44 @@
                 id: uid(),
                 title: (title || '').trim() || '제목 없는 곡',
                 lines: enLines.map((en, idx) => ({ id: uid(), en, ko: koLines[idx] || '' }))
+            };
+        }
+
+        function hasHangul(s) { return /[가-힣ᄀ-ᇿ㄰-㆏]/.test(s); }
+
+        // "영어 한 줄 + 한글 번역 한 줄"이 번갈아 있는 텍스트를 한글 포함 여부로 자동 구분해서
+        // { en, ko } 쌍의 배열로 만듦 — 영어 줄 바로 다음이 한글 줄이면 그 줄을 번역으로 묶고,
+        // 다음이 한글이 아니면(번역 없음) ko를 빈 문자열로 둠
+        function parseInterleavedLyrics(text) {
+            const rawLines = (text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const pairs = [];
+            let i = 0;
+            while(i < rawLines.length) {
+                const line = rawLines[i];
+                if(hasHangul(line)) {
+                    // 영어 줄 없이 한글 줄이 먼저 나온 경우 — 바로 앞 항목에 번역이 비어있으면 붙여줌
+                    if(pairs.length > 0 && !pairs[pairs.length - 1].ko) pairs[pairs.length - 1].ko = line;
+                    i++;
+                    continue;
+                }
+                const next = rawLines[i + 1];
+                if(next && hasHangul(next)) {
+                    pairs.push({ en: line, ko: next });
+                    i += 2;
+                } else {
+                    pairs.push({ en: line, ko: '' });
+                    i += 1;
+                }
+            }
+            return pairs;
+        }
+
+        function buildLyricsSongFromInterleaved(title, text) {
+            const pairs = parseInterleavedLyrics(text);
+            return {
+                id: uid(),
+                title: (title || '').trim() || '제목 없는 곡',
+                lines: pairs.map(p => ({ id: uid(), en: p.en, ko: p.ko }))
             };
         }
 
@@ -2424,6 +2459,7 @@
         // ==================================================================
         let lyricsLineIndex = 0;
         let lyricsDraftText = "";
+        let editingLyricsSongId = null; // 곡 추가/수정 모달이 지금 어느 모드인지 — null이면 새 곡 추가, 값이 있으면 그 곡 수정
 
         (function restoreLyricsProgress() {
             try {
@@ -3483,29 +3519,51 @@
         }
 
         document.getElementById("new-lyrics-song-btn").addEventListener("click", () => {
+            editingLyricsSongId = null;
+            document.getElementById("lyrics-modal-title").textContent = "새 곡 추가하기";
             document.getElementById("new-lyrics-title-input").value = "";
             document.getElementById("new-lyrics-lines-input").value = "";
-            document.getElementById("new-lyrics-ko-input").value = "";
             document.getElementById("add-lyrics-modal").style.display = "flex";
         });
         document.getElementById("close-lyrics-modal-btn").addEventListener("click", () => {
             document.getElementById("add-lyrics-modal").style.display = "none";
         });
+        // 이미 등록된 곡의 가사/번역을 통째로 다시 입력(교체) — 영어만 먼저 넣어둔 곡에
+        // 나중에 번역을 추가하고 싶을 때, 같은 영어 가사 뒤에 한글 줄을 번갈아 붙여서 다시 저장
+        document.getElementById("edit-lyrics-song-btn").addEventListener("click", async () => {
+            const song = getActiveLyricsSong();
+            if(!song) { await showAlert("수정할 곡이 없습니다."); return; }
+            editingLyricsSongId = song.id;
+            document.getElementById("lyrics-modal-title").textContent = "가사/번역 수정하기";
+            document.getElementById("new-lyrics-title-input").value = song.title;
+            document.getElementById("new-lyrics-lines-input").value = song.lines
+                .map(l => l.ko ? `${l.en}\n${l.ko}` : l.en)
+                .join('\n');
+            document.getElementById("add-lyrics-modal").style.display = "flex";
+        });
         document.getElementById("save-new-lyrics-btn").addEventListener("click", async () => {
             const titleVal = document.getElementById("new-lyrics-title-input").value.trim();
             const linesVal = document.getElementById("new-lyrics-lines-input").value;
-            const koVal = document.getElementById("new-lyrics-ko-input").value;
             if(!titleVal) {
                 await showAlert("곡 제목을 입력해주세요.");
                 return;
             }
-            const song = buildLyricsSong(titleVal, linesVal, koVal);
-            if(song.lines.length === 0) {
+            const built = buildLyricsSongFromInterleaved(titleVal, linesVal);
+            if(built.lines.length === 0) {
                 await showAlert("가사를 한 줄 이상 입력해주세요.");
                 return;
             }
-            lyricsSongs.push(song);
-            activeLyricsSongId = song.id;
+            if(editingLyricsSongId) {
+                const target = lyricsSongs.find(s => s.id === editingLyricsSongId);
+                if(target) {
+                    target.title = built.title;
+                    target.lines = built.lines;
+                    activeLyricsSongId = target.id;
+                }
+            } else {
+                lyricsSongs.push(built);
+                activeLyricsSongId = built.id;
+            }
             saveLyricsSongs();
             saveActiveLyricsSongId();
             lyricsLineIndex = 0;
@@ -3621,9 +3679,9 @@
             } else if(type === 'lyrics-json') {
                 content = JSON.stringify([
                     {
-                        title: "Perfect - Ed Sheeran",
-                        en: "I found a love for me\nDarling just dive right in",
-                        ko: "사랑을 찾았어요, 나를 위한\n그대여, 그냥 뛰어들어요"
+                        title: "곡 제목 - 아티스트",
+                        en: "English line one\nEnglish line two",
+                        ko: "한글 번역 첫 줄\n한글 번역 둘째 줄"
                     }
                 ], null, 2);
                 filename = "가사_템플릿.json"; mime = "application/json;charset=utf-8";
