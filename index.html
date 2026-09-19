@@ -797,7 +797,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.16.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.16.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2191,7 +2191,7 @@
             const target = getCurrentSpeakingTarget();
             if(!target) return;
             const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(target.en, transcript);
-            recordSpeakScore(percent);
+            if(isWholeEpisodeMode()) recordSpeakScore(percent); // 평균/누적은 에피소드 전체 말하기일 때만 기록
 
             document.getElementById("speak-status-text").textContent = source === 'typed'
                 ? "채점이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 그 문장을 들을 수 있어요)"
