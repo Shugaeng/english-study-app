@@ -662,6 +662,7 @@
         const STORAGE_KEY_ACTIVE_SPEAKING_DAY = "english_study_active_speaking_day_v4";
         const STORAGE_KEY_SPEAK_PROGRESS = "english_study_speak_progress_v1"; // 이어서 학습하기 — 마지막으로 보던 에피소드/문장/모드 (이 기기 전용, 클라우드 동기화 대상 아님)
         const STORAGE_KEY_SPEAK_STATS = "english_study_speak_stats_v1"; // 말하기 채점(스피킹+타이핑) 누적 평균 점수
+        const STORAGE_KEY_SPEAK_EPISODE_STATS = "english_study_speak_episode_stats_v1"; // 에피소드별 누적 평균 점수 (에피소드 id로 구분)
         const STORAGE_KEY_LOCAL_UPDATED_AT = "english_study_local_updated_at_v1"; // 클라우드 자동 동기화용 — 이 기기 데이터가 마지막으로 바뀐 시각
 
         // ==================================================================
@@ -796,7 +797,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.15.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.16.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1787,11 +1788,39 @@
 
         function saveSpeakStats() { localStorage.setItem(STORAGE_KEY_SPEAK_STATS, JSON.stringify(speakStats)); }
 
+        // 에피소드별 누적 평균 — 에피소드 id를 키로 { count, sumPercent }를 따로 관리
+        let speakEpisodeStats = (function() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_SPEAK_EPISODE_STATS) || "null");
+                if(saved && typeof saved === 'object') return saved;
+            } catch(err) { /* 저장된 값이 깨졌으면 빈 상태로 다시 시작 */ }
+            return {};
+        })();
+
+        function saveSpeakEpisodeStats() { localStorage.setItem(STORAGE_KEY_SPEAK_EPISODE_STATS, JSON.stringify(speakEpisodeStats)); }
+
+        function getEpisodeAverage(episodeId) {
+            const es = speakEpisodeStats[episodeId];
+            if(!es || es.count === 0) return null;
+            return Math.round(es.sumPercent / es.count);
+        }
+
         function recordSpeakScore(percent) {
             speakStats.count++;
             speakStats.sumPercent += percent;
             saveSpeakStats();
+
+            const episode = getCurrentSpeakingEpisode();
+            if(episode) {
+                const es = speakEpisodeStats[episode.id] || { count: 0, sumPercent: 0 };
+                es.count++;
+                es.sumPercent += percent;
+                speakEpisodeStats[episode.id] = es;
+                saveSpeakEpisodeStats();
+            }
+
             renderSpeakAverageScore();
+            renderEpisodeChips(); // 현재 에피소드 제목 옆 평균 갱신
         }
 
         function renderSpeakAverageScore() {
@@ -1915,7 +1944,14 @@
                 chip.addEventListener("click", () => changeSpeakingEpisode(idx));
                 chipsEl.appendChild(chip);
             });
-            titleEl.textContent = episodes[speakEpisodeIndex] ? episodes[speakEpisodeIndex].title : "";
+            const currentEp = episodes[speakEpisodeIndex];
+            if(currentEp) {
+                const avg = getEpisodeAverage(currentEp.id);
+                titleEl.innerHTML = escapeHtml(currentEp.title) +
+                    (avg !== null ? ` <span class="text-textMuted font-normal">· 평균 ${avg}%</span>` : '');
+            } else {
+                titleEl.textContent = "";
+            }
         }
 
         function changeSpeakingEpisode(idx) {
@@ -2455,7 +2491,7 @@
                 wordBooks, activeWordBookId,
                 readingBooks, activeReadingBookId,
                 speakingDays, activeSpeakingDayId,
-                stats, userGoals, bqStats, progress, speakStats,
+                stats, userGoals, bqStats, progress, speakStats, speakEpisodeStats,
                 masteredWords: [...masteredWordSet]
             };
         }
@@ -2490,12 +2526,13 @@
             if(data.bqStats) bqStats = data.bqStats;
             if(data.progress) progress = data.progress;
             if(data.speakStats && Number.isInteger(data.speakStats.count) && typeof data.speakStats.sumPercent === 'number') speakStats = data.speakStats;
+            if(data.speakEpisodeStats && typeof data.speakEpisodeStats === 'object') speakEpisodeStats = data.speakEpisodeStats;
             masteredWordSet = new Set(Array.isArray(data.masteredWords) ? data.masteredWords : []);
 
             saveWordBooks(); saveActiveWordBookId();
             saveReadingBooks(); saveActiveReadingBookId();
             saveSpeakingDays(); saveActiveSpeakingDayId();
-            saveStats(stats); saveGoals(userGoals); saveBQStats(bqStats); saveProgress(progress); saveMasteredWordSet(); saveSpeakStats();
+            saveStats(stats); saveGoals(userGoals); saveBQStats(bqStats); saveProgress(progress); saveMasteredWordSet(); saveSpeakStats(); saveSpeakEpisodeStats();
 
             words = getActiveWordBook().words;
             document.getElementById("input-goal-daily").value = userGoals.daily;
@@ -2918,7 +2955,7 @@
                     <div class="flex justify-between items-center gap-2">
                         <button class="flex items-center gap-1.5 min-w-0 text-left toggle-speaking-episode-btn">
                             <i class="fa-solid fa-chevron-right text-[10px] text-textMuted shrink-0 transition-transform"></i>
-                            <div class="text-xs font-bold text-textDark break-words min-w-0">${epIdx + 1}. ${escapeHtml(ep.title)} <span class="font-normal text-textMuted">(문장 ${ep.sentences.length}개)</span> ${(ep.vocab && ep.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${ep.vocab.length}개</span>` : ''}</div>
+                            <div class="text-xs font-bold text-textDark break-words min-w-0">${epIdx + 1}. ${escapeHtml(ep.title)} <span class="font-normal text-textMuted">(문장 ${ep.sentences.length}개)</span> ${(ep.vocab && ep.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${ep.vocab.length}개</span>` : ''} ${(getEpisodeAverage(ep.id) !== null) ? `<span class="text-[10px] font-normal text-primary">🎯 평균 ${getEpisodeAverage(ep.id)}%</span>` : ''}</div>
                         </button>
                         <div class="flex items-center gap-1 shrink-0">
                             <button class="text-[11px] font-semibold text-primary px-2 py-1 rename-speaking-episode-btn">이름변경</button>
