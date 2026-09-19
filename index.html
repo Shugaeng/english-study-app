@@ -51,7 +51,7 @@
         .speak-word-extra { background: #FEF3C7; color: #B45309; border-radius: 4px; padding: 0 3px; text-decoration: line-through; text-decoration-color: #B45309; }
         .speak-sentence-clickable { cursor: pointer; border-radius: 6px; padding: 2px 3px; transition: background-color 0.15s; }
         .speak-sentence-clickable:hover, .speak-sentence-clickable:active { background-color: rgba(91, 92, 240, 0.12); }
-        #speak-mic-btn.recording { animation: speak-pulse 1.2s ease-in-out infinite; background-color: #EA4335 !important; }
+        #speak-mic-btn.recording, #lyrics-mic-btn.recording { animation: speak-pulse 1.2s ease-in-out infinite; background-color: #EA4335 !important; }
         @keyframes speak-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(234,67,53,0.4); } 50% { box-shadow: 0 0 0 14px rgba(234,67,53,0); } }
     </style>
 </head>
@@ -159,46 +159,7 @@
                 </div>
             </section>
 
-            <!-- 2. 암기 탭 (Flashcards) -->
-            <section id="panel-vocab" class="panel">
-                <div class="bg-white rounded-b-[2rem] pt-14 pb-6 px-6 shadow-sm mb-6">
-                    <div class="flex justify-between items-center mb-3">
-                        <div>
-                            <h1 class="text-2xl font-bold text-textDark">암기 카드 <i class="fa-solid fa-clone text-primary ml-1"></i></h1>
-                            <p class="text-textMuted text-sm mt-1">단어를 넘기며 암기 상태를 체크하세요</p>
-                        </div>
-                        <button id="open-add-modal-btn" class="bg-primary text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md active:scale-95 transition-transform flex items-center gap-1.5">
-                            <i class="fa-solid fa-plus"></i> 단어 추가
-                        </button>
-                    </div>
-                    <select class="wordbook-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark" onchange="changeWordBook(this.value)"></select>
-                </div>
-
-                <div class="px-6">
-                    <div id="flashcard" class="bg-white border border-divider rounded-3xl p-8 shadow-card min-h-[260px] flex flex-col justify-between items-center text-center cursor-pointer relative mb-6 active:scale-[0.99] transition-transform">
-                        <div class="w-full flex justify-between items-center text-xs text-textMuted font-medium">
-                            <span id="fc-progress-text">1 / 10</span>
-                            <span id="fc-box-badge" class="bg-primary/10 text-primary px-2.5 py-1 rounded-full">Lv.1</span>
-                        </div>
-                        <div class="my-auto py-4">
-                            <h2 id="fc-word" class="text-3xl font-extrabold text-textDark mb-2">Loading...</h2>
-                            <p id="fc-meaning" class="text-lg text-primary font-semibold hidden">뜻이 여기에 표시됩니다</p>
-                        </div>
-                        <div class="text-xs text-textMuted"><i class="fa-solid fa-hand-pointer mr-1"></i> 카드를 탭하여 뜻 확인</div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <button id="btn-dont-know" class="bg-white border border-divider text-textDark font-bold py-4 rounded-2xl shadow-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-rotate-right text-textMuted"></i> 모름
-                        </button>
-                        <button id="btn-know" class="bg-primary text-white font-bold py-4 rounded-2xl shadow-md shadow-primary/30 active:scale-95 transition-transform flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-check"></i> 외웠음
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 3. 퀴즈 탭 (Word Quiz) -->
+            <!-- 2. 퀴즈 탭 (Word Quiz) -->
             <section id="panel-quiz" class="panel">
                 <div class="bg-white rounded-b-[2rem] pt-14 pb-6 px-6 shadow-sm mb-6">
                     <div class="flex justify-between items-end mb-3">
@@ -243,7 +204,7 @@
                 </div>
             </section>
 
-            <!-- 4. 독해 탭 (Reading Quiz) -->
+            <!-- 3. 독해 탭 (Reading Quiz) -->
             <section id="panel-blankquiz" class="panel">
                 <div class="bg-white rounded-b-[2rem] pt-14 pb-6 px-6 shadow-sm mb-6">
                     <div class="flex justify-between items-end mb-3">
@@ -278,7 +239,7 @@
                 </div>
             </section>
 
-            <!-- 5. 말하기 탭 (Speaking Practice) -->
+            <!-- 4. 말하기 탭 (Speaking Practice) -->
             <section id="panel-speaking" class="panel">
                 <div class="bg-white rounded-b-[2rem] pt-14 pb-6 px-6 shadow-sm mb-6">
                     <div class="flex justify-between items-end mb-3">
@@ -369,6 +330,69 @@
                         <button id="speak-retry-btn" class="w-full bg-textDark text-white font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-rotate-right"></i> 다시 풀기
                         </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. 가사 탭 (Lyrics Memorization) -->
+            <section id="panel-lyrics" class="panel">
+                <div class="bg-white rounded-b-[2rem] pt-14 pb-6 px-6 shadow-sm mb-6">
+                    <div class="flex justify-between items-end mb-3">
+                        <div>
+                            <h1 class="text-2xl font-bold text-textDark">가사 암기 <i class="fa-solid fa-music text-primary ml-1"></i></h1>
+                            <p class="text-textMuted text-sm mt-1">영어 노래 가사를 한 줄씩 외워보세요</p>
+                        </div>
+                    </div>
+                    <select class="lyrics-song-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark" onchange="changeLyricsSong(this.value)"></select>
+                </div>
+
+                <div class="px-6 pb-6">
+                    <div id="lyrics-song-empty" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card text-center text-sm text-textMuted mb-4">
+                        아직 등록된 곡이 없어요.<br>설정 탭에서 곡을 추가해주세요.
+                    </div>
+
+                    <div id="lyrics-content" class="hidden">
+                        <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-6">
+                            <div class="flex justify-center items-center text-xs text-textMuted font-medium mb-3">
+                                <span id="lyrics-progress-text">0 / 0</span>
+                            </div>
+
+                            <div id="lyrics-line-wrap" class="min-h-[70px] flex items-center justify-center py-3">
+                                <p id="lyrics-line-text" class="text-xl font-bold text-textDark text-center leading-relaxed"></p>
+                            </div>
+
+                            <button id="lyrics-reveal-btn" class="w-full bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl mb-2 flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-eye"></i> 가사 보기
+                            </button>
+                            <button id="lyrics-listen-btn" class="w-full bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl mb-3 flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-volume-high"></i> 원어민 발음 듣기
+                            </button>
+
+                            <textarea id="lyrics-write-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-3 text-sm font-medium text-textDark resize-none" placeholder="기억나는 대로 가사를 입력해보세요..."></textarea>
+                            <button id="lyrics-write-submit-btn" class="w-full mt-2 bg-primary text-white font-bold py-3 rounded-xl shadow-md shadow-primary/30 active:scale-95 transition-transform">채점하기</button>
+
+                            <div id="lyrics-status-text" class="text-center text-xs text-textMuted min-h-[16px] mt-3 mb-1"></div>
+
+                            <div class="flex items-center justify-center gap-6 mt-3">
+                                <button id="lyrics-prev-btn" class="w-10 h-10 rounded-full bg-cardGray flex items-center justify-center text-textMuted active:scale-95 transition-transform">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <button id="lyrics-mic-btn" class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl shadow-md shadow-primary/30 active:scale-95 transition-transform">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                                <button id="lyrics-next-btn" class="w-10 h-10 rounded-full bg-cardGray flex items-center justify-center text-textMuted active:scale-95 transition-transform">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="lyrics-result-area" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card">
+                            <div class="text-xs font-bold text-textMuted mb-1" id="lyrics-result-label">내가 입력한 가사</div>
+                            <p id="lyrics-recognized-text" class="text-sm text-textMuted mb-3"></p>
+                            <div class="text-xs font-bold text-textMuted mb-2">실제 가사 <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span></div>
+                            <p id="lyrics-result-line" class="text-lg leading-relaxed text-textDark mb-4"></p>
+                            <div id="lyrics-score-badge" class="text-center bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold py-2.5 rounded-xl"></div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -481,6 +505,21 @@
                         <div id="speaking-manage-list" class="flex flex-col gap-2"></div>
                     </div>
 
+                    <!-- 가사 관리 -->
+                    <div class="bg-white rounded-2xl border border-divider p-5 shadow-card mb-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-music text-primary"></i> 가사 관리</h2>
+                            <button id="new-lyrics-song-btn" class="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full active:scale-95 transition-transform">+ 곡 추가</button>
+                        </div>
+                        <p class="text-[11px] text-textMuted mb-3">곡을 추가하면 줄바꿈 기준으로 가사가 자동으로 나뉘어, 가사 탭에서 한 줄씩 암기 연습을 할 수 있어요.</p>
+                        <select class="lyrics-song-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeLyricsSong(this.value)"></select>
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <button id="rename-lyrics-song-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">이름변경</button>
+                            <button id="delete-lyrics-song-btn" class="bg-red-50 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">삭제</button>
+                        </div>
+                        <div id="lyrics-manage-list" class="flex flex-col gap-2"></div>
+                    </div>
+
                     <!-- 학습 기록 초기화 -->
                     <div class="bg-red-50 rounded-2xl border border-red-200 p-5 mb-6">
                         <h2 class="text-sm font-bold text-red-600 mb-2 flex items-center gap-2"><i class="fa-solid fa-rotate-right"></i> 학습 기록 초기화</h2>
@@ -508,6 +547,9 @@
 
                 <!-- 접음/펼침 대상 영역 -->
                 <div id="wordlist-container-wrap" class="px-6 pb-6 transition-all duration-300" style="display:none;">
+                    <button id="open-add-modal-btn" class="w-full bg-primary text-white text-xs font-bold py-2.5 rounded-xl shadow-md active:scale-95 transition-transform flex items-center justify-center gap-1.5 mb-3">
+                        <i class="fa-solid fa-plus"></i> 단어 추가
+                    </button>
                     <div id="lib-word-list" class="flex flex-col gap-3"></div>
                 </div>
             </section>
@@ -520,10 +562,6 @@
                 <i class="fa-solid fa-chart-pie text-lg"></i>
                 <span class="text-[11px] font-semibold">현황</span>
             </button>
-            <button onclick="switchTab('vocab')" class="tab-btn flex flex-col items-center gap-1 text-textMuted transition-colors" data-tab="vocab">
-                <i class="fa-solid fa-clone text-lg"></i>
-                <span class="text-[11px] font-semibold">암기</span>
-            </button>
             <button onclick="switchTab('quiz')" class="tab-btn flex flex-col items-center gap-1 text-textMuted transition-colors" data-tab="quiz">
                 <i class="fa-solid fa-puzzle-piece text-lg"></i>
                 <span class="text-[11px] font-semibold">퀴즈</span>
@@ -535,6 +573,10 @@
             <button onclick="switchTab('speaking')" class="tab-btn flex flex-col items-center gap-1 text-textMuted transition-colors" data-tab="speaking">
                 <i class="fa-solid fa-microphone text-lg"></i>
                 <span class="text-[11px] font-semibold">말하기</span>
+            </button>
+            <button onclick="switchTab('lyrics')" class="tab-btn flex flex-col items-center gap-1 text-textMuted transition-colors" data-tab="lyrics">
+                <i class="fa-solid fa-music text-lg"></i>
+                <span class="text-[11px] font-semibold">가사</span>
             </button>
             <button onclick="switchTab('library')" class="tab-btn flex flex-col items-center gap-1 text-textMuted transition-colors" data-tab="library">
                 <i class="fa-solid fa-gear text-lg"></i>
@@ -588,6 +630,27 @@
                 <div class="flex gap-2">
                     <button id="close-speaking-modal-btn" class="flex-1 bg-cardGray text-textMuted font-bold py-3 rounded-xl text-sm">취소</button>
                     <button id="save-new-speaking-btn" class="flex-1 bg-primary text-white font-bold py-3 rounded-xl text-sm shadow-md">저장</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 가사 곡 추가 모달 -->
+        <div id="add-lyrics-modal" class="absolute inset-0 bg-black/40 z-50 flex items-center justify-center p-6" style="display:none;">
+            <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+                <h3 class="text-lg font-bold text-textDark mb-4">새 곡 추가하기</h3>
+                <div class="space-y-3 mb-5">
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">곡 제목</label>
+                        <input type="text" id="new-lyrics-title-input" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark" placeholder="예: Perfect - Ed Sheeran">
+                    </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">가사 (한 줄씩 줄바꿈으로 붙여넣으면 자동으로 나뉘어요)</label>
+                        <textarea id="new-lyrics-lines-input" rows="8" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I found a love, for me&#10;Darling, just dive right in&#10;And follow my lead"></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="close-lyrics-modal-btn" class="flex-1 bg-cardGray text-textMuted font-bold py-3 rounded-xl text-sm">취소</button>
+                    <button id="save-new-lyrics-btn" class="flex-1 bg-primary text-white font-bold py-3 rounded-xl text-sm shadow-md">저장</button>
                 </div>
             </div>
         </div>
@@ -667,6 +730,9 @@
         const STORAGE_KEY_SPEAK_PROGRESS = "english_study_speak_progress_v1"; // 이어서 학습하기 — 마지막으로 보던 에피소드/문장/모드 (이 기기 전용, 클라우드 동기화 대상 아님)
         const STORAGE_KEY_SPEAK_STATS = "english_study_speak_stats_v1"; // 말하기 채점(스피킹+타이핑) 누적 평균 점수
         const STORAGE_KEY_SPEAK_EPISODE_STATS = "english_study_speak_episode_stats_v1"; // 에피소드별 누적 평균 점수 (에피소드 id로 구분)
+        const STORAGE_KEY_LYRICS_SONGS = "english_study_lyrics_songs_v1";
+        const STORAGE_KEY_ACTIVE_LYRICS_SONG = "english_study_active_lyrics_song_v1";
+        const STORAGE_KEY_LYRICS_PROGRESS = "english_study_lyrics_progress_v1"; // 이어서 학습하기 — 마지막으로 보던 곡/줄 (이 기기 전용, 클라우드 동기화 대상 아님)
         const STORAGE_KEY_LOCAL_UPDATED_AT = "english_study_local_updated_at_v1"; // 클라우드 자동 동기화용 — 이 기기 데이터가 마지막으로 바뀐 시각
 
         // ==================================================================
@@ -713,7 +779,7 @@
         const _originalLocalStorageSetItem = localStorage.setItem.bind(localStorage);
         localStorage.setItem = function(key, value) {
             _originalLocalStorageSetItem(key, value);
-            if(appInitialized && !applyingRemoteData && key.startsWith("english_study_") && key !== STORAGE_KEY_LOCAL_UPDATED_AT && key !== STORAGE_KEY_SPEAK_PROGRESS) {
+            if(appInitialized && !applyingRemoteData && key.startsWith("english_study_") && key !== STORAGE_KEY_LOCAL_UPDATED_AT && key !== STORAGE_KEY_SPEAK_PROGRESS && key !== STORAGE_KEY_LYRICS_PROGRESS) {
                 setLocalUpdatedAt(Date.now());
                 scheduleCloudPush();
             }
@@ -801,7 +867,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.17.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.18.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1001,6 +1067,26 @@
         function saveActiveSpeakingDayId() { localStorage.setItem(STORAGE_KEY_ACTIVE_SPEAKING_DAY, activeSpeakingDayId); }
         function getSpeakingDaySentenceCount(day) { return day.episodes.reduce((sum, e) => sum + e.sentences.length, 0); }
 
+        // 가사(노래) 데이터 — 사용자가 자유롭게 곡을 추가/삭제하는 목록. 한글 번역 없이 영어
+        // 원문 가사만 줄바꿈 기준으로 나눠 저장 — 가사를 통째로 암기하는 용도라 번역은 불필요
+        function buildLyricsSong(title, lyricsText) {
+            const lines = (lyricsText || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            return {
+                id: uid(),
+                title: (title || '').trim() || '제목 없는 곡',
+                lines: lines.map(en => ({ id: uid(), en }))
+            };
+        }
+
+        let lyricsSongs = JSON.parse(localStorage.getItem(STORAGE_KEY_LYRICS_SONGS));
+        if(!lyricsSongs || !Array.isArray(lyricsSongs)) lyricsSongs = [];
+        let activeLyricsSongId = localStorage.getItem(STORAGE_KEY_ACTIVE_LYRICS_SONG) || (lyricsSongs[0] ? lyricsSongs[0].id : null);
+        if(activeLyricsSongId && !lyricsSongs.find(s => s.id === activeLyricsSongId)) activeLyricsSongId = lyricsSongs[0] ? lyricsSongs[0].id : null;
+
+        function getActiveLyricsSong() { return lyricsSongs.find(s => s.id === activeLyricsSongId) || null; }
+        function saveLyricsSongs() { localStorage.setItem(STORAGE_KEY_LYRICS_SONGS, JSON.stringify(lyricsSongs)); }
+        function saveActiveLyricsSongId() { localStorage.setItem(STORAGE_KEY_ACTIVE_LYRICS_SONG, activeLyricsSongId || ''); }
+
         // 현황 탭 전용 단어장 선택 — 암기/퀴즈 탭에서 쓰는 활성 단어장과는 별도로,
         // 현황 탭의 통계(마스터 단어/미암기 단어율)를 어떤 단어장 기준으로 볼지 독립적으로 고를 수 있음
         let dashboardWordBookId = localStorage.getItem(STORAGE_KEY_DASH_WORDBOOK) || activeWordBookId;
@@ -1097,13 +1183,14 @@
             const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
             if(btn) btn.classList.add('active');
 
-            if(tabId === 'vocab') initFlashcard();
             if(tabId === 'quiz') showQuizStartScreen();
             if(tabId === 'blankquiz') newBlankQuestion();
             if(tabId === 'speaking') initSpeakingTab();
-            if(tabId === 'library') { renderWordList(); renderSpeakingManageList(); }
+            if(tabId === 'lyrics') initLyricsTab();
+            if(tabId === 'library') { renderWordList(); renderSpeakingManageList(); renderLyricsManageList(); }
             if(tabId === 'dashboard') renderDashboard();
             if(tabId !== 'speaking') { stopSpeakingRecognition(); stopSpeakingSynthesis(); }
+            if(tabId !== 'lyrics') { stopLyricsRecognition(); stopLyricsSynthesis(); }
         }
 
         function renderDashboard() {
@@ -1182,7 +1269,6 @@
 
             const activePanel = document.querySelector('.panel.active');
             const tabId = activePanel ? activePanel.id.replace('panel-', '') : '';
-            if(tabId === 'vocab') { fcIndex = 0; initFlashcard(); }
             if(tabId === 'quiz' && isQuizStarted()) initQuiz();
             if(tabId === 'library') renderWordList();
             renderDashboard();
@@ -1220,81 +1306,6 @@
             if(activePanel && activePanel.id === 'panel-library') renderSpeakingManageList();
         }
 
-        // Flashcards Logic — 암기 완료(Lv.3 이상) 단어는 목록에서 제외
-        let fcIndex = 0;
-        let fcShowingMeaning = false;
-
-        function getFlashcardPool() {
-            return words.filter(w => (w.box || 1) < MASTER_LEVEL);
-        }
-
-        function initFlashcard() {
-            const pool = getFlashcardPool();
-            if(pool.length === 0) {
-                document.getElementById("fc-word").textContent = words.length === 0 ? "단어가 없습니다" : "🎉 모든 단어를 암기 완료했어요!";
-                document.getElementById("fc-meaning").textContent = words.length === 0 ? "단어를 추가해주세요" : "새 단어를 추가하거나 설정에서 학습 기록을 초기화해보세요";
-                document.getElementById("fc-meaning").classList.remove("hidden");
-                document.getElementById("fc-progress-text").textContent = `0 / 0`;
-                document.getElementById("fc-box-badge").textContent = ``;
-                return;
-            }
-            if(fcIndex >= pool.length) fcIndex = 0;
-            renderFlashcard();
-        }
-
-        function renderFlashcard() {
-            const pool = getFlashcardPool();
-            if(pool.length === 0) { initFlashcard(); return; }
-            if(fcIndex >= pool.length) fcIndex = 0;
-            const w = pool[fcIndex];
-            document.getElementById("fc-progress-text").textContent = `${fcIndex + 1} / ${pool.length}`;
-            document.getElementById("fc-box-badge").textContent = `Lv.${w.box || 1}`;
-            document.getElementById("fc-word").textContent = w.word;
-            document.getElementById("fc-meaning").textContent = w.meaning;
-            const meaningEl = document.getElementById("fc-meaning");
-            if(fcShowingMeaning) meaningEl.classList.remove("hidden");
-            else meaningEl.classList.add("hidden");
-        }
-
-        document.getElementById("flashcard").addEventListener("click", () => {
-            if(getFlashcardPool().length === 0) return;
-            fcShowingMeaning = !fcShowingMeaning;
-            renderFlashcard();
-        });
-
-        document.getElementById("btn-know").addEventListener("click", () => {
-            const pool = getFlashcardPool();
-            if(pool.length === 0) return;
-            const w = pool[fcIndex];
-            w.box = Math.min(MASTER_LEVEL, (w.box || 1) + 1); // 한 단계씩 승급 (Lv.1~MASTER_LEVEL)
-            const justMastered = w.box >= MASTER_LEVEL;
-            if(justMastered) recordMastery(w.word); // 방금 마스터한 경우에만 목표 진행률 반영
-            saveWords(words);
-            if(justMastered) removeFromUnmemorizedBookIfMastered(w);
-            updateStreak();
-            renderDashboard();
-            populateWordBookSelectors();
-            nextFlashcard(justMastered);
-        });
-
-        document.getElementById("btn-dont-know").addEventListener("click", () => {
-            const pool = getFlashcardPool();
-            if(pool.length === 0) return;
-            pool[fcIndex].box = 1;
-            saveWords(words);
-            updateStreak();
-            renderDashboard();
-            nextFlashcard(false);
-        });
-
-        // wordJustRemoved: 방금 카드가 마스터되어 풀에서 빠졌으면 true (배열이 당겨지므로 같은 인덱스가 이미 다음 단어)
-        function nextFlashcard(wordJustRemoved) {
-            fcShowingMeaning = false;
-            const pool = getFlashcardPool();
-            if(pool.length === 0) { initFlashcard(); return; }
-            fcIndex = wordJustRemoved ? (fcIndex % pool.length) : ((fcIndex + 1) % pool.length);
-            renderFlashcard();
-        }
 
         // ==================================================================
         // 단어 퀴즈 로직 — 암기 완료(Lv.3) 단어는 출제 대상에서 제외
@@ -2396,6 +2407,313 @@
         });
 
         // ==================================================================
+        // 가사(Lyrics) 탭 — 노래 가사를 한 줄씩 외워서 마이크로 부르거나 타이핑해서 맞는지
+        // 확인. 말하기 탭과 달리 한글 번역 없이 영어 원문만 다루고, 기본으로 가사를 가려둔
+        // 채 기억나는 대로 시도해보고("가사 보기"로 필요할 때만 확인) 채점하는 방식
+        // ==================================================================
+        let lyricsLineIndex = 0;
+        let lyricsDraftText = "";
+        let lyricsRevealed = false;
+
+        (function restoreLyricsProgress() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_LYRICS_PROGRESS) || "null");
+                if(saved && saved.songId === activeLyricsSongId) {
+                    lyricsLineIndex = Number.isInteger(saved.lineIndex) ? saved.lineIndex : 0;
+                    lyricsDraftText = typeof saved.draftText === 'string' ? saved.draftText : "";
+                }
+            } catch(err) { /* 저장된 값이 깨졌으면 기본값으로 시작 */ }
+        })();
+
+        function saveLyricsProgress() {
+            localStorage.setItem(STORAGE_KEY_LYRICS_PROGRESS, JSON.stringify({
+                songId: activeLyricsSongId,
+                lineIndex: lyricsLineIndex,
+                draftText: lyricsDraftText
+            }));
+        }
+
+        function getLyricsLines() {
+            const song = getActiveLyricsSong();
+            return song ? song.lines : [];
+        }
+
+        function populateLyricsSongSelectors() {
+            document.querySelectorAll('.lyrics-song-select').forEach(sel => {
+                sel.innerHTML = lyricsSongs.map(s => `<option value="${s.id}" ${s.id===activeLyricsSongId?'selected':''}>${escapeHtml(s.title)} (${s.lines.length}줄)</option>`).join('');
+            });
+        }
+
+        function changeLyricsSong(id) {
+            if(!id || id === activeLyricsSongId) return;
+            stopLyricsRecognition();
+            stopLyricsSynthesis();
+            activeLyricsSongId = id;
+            saveActiveLyricsSongId();
+            lyricsLineIndex = 0;
+            lyricsDraftText = "";
+            lyricsRevealed = false;
+            saveLyricsProgress();
+            populateLyricsSongSelectors();
+
+            const activePanel = document.querySelector('.panel.active');
+            if(activePanel && activePanel.id === 'panel-lyrics') initLyricsTab();
+            if(activePanel && activePanel.id === 'panel-library') renderLyricsManageList();
+        }
+
+        function initLyricsTab() {
+            stopLyricsRecognition();
+            stopLyricsSynthesis();
+            populateLyricsSongSelectors();
+            const emptyEl = document.getElementById("lyrics-song-empty");
+            const contentEl = document.getElementById("lyrics-content");
+            if(lyricsSongs.length === 0) {
+                emptyEl.classList.remove("hidden");
+                contentEl.classList.add("hidden");
+                return;
+            }
+            emptyEl.classList.add("hidden");
+            contentEl.classList.remove("hidden");
+            const lines = getLyricsLines();
+            if(lyricsLineIndex >= lines.length || lyricsLineIndex < 0) lyricsLineIndex = 0;
+            renderLyricsLine();
+        }
+
+        function updateLyricsRevealButtonUI() {
+            const btn = document.getElementById("lyrics-reveal-btn");
+            if(!btn) return;
+            btn.innerHTML = lyricsRevealed ? '<i class="fa-solid fa-eye-slash"></i> 가사 가리기' : '<i class="fa-solid fa-eye"></i> 가사 보기';
+            renderIcons(btn);
+        }
+
+        function renderLyricsLine() {
+            document.getElementById("lyrics-result-area").classList.add("hidden");
+            const lines = getLyricsLines();
+            const micBtn = document.getElementById("lyrics-mic-btn");
+            const listenBtn = document.getElementById("lyrics-listen-btn");
+            const writeInput = document.getElementById("lyrics-write-input");
+            const writeSubmitBtn = document.getElementById("lyrics-write-submit-btn");
+
+            if(lines.length === 0) {
+                document.getElementById("lyrics-progress-text").textContent = "0 / 0";
+                document.getElementById("lyrics-line-text").textContent = "이 곡에는 가사가 없어요";
+                document.getElementById("lyrics-status-text").textContent = "설정 탭에서 가사를 확인해주세요";
+                micBtn.disabled = true; micBtn.classList.add("opacity-40");
+                listenBtn.disabled = true; listenBtn.classList.add("opacity-40");
+                writeInput.disabled = true;
+                writeSubmitBtn.disabled = true; writeSubmitBtn.classList.add("opacity-40");
+                return;
+            }
+            micBtn.disabled = false; micBtn.classList.remove("opacity-40");
+            listenBtn.disabled = false; listenBtn.classList.remove("opacity-40");
+            writeInput.disabled = false;
+            writeSubmitBtn.disabled = false; writeSubmitBtn.classList.remove("opacity-40");
+
+            document.getElementById("lyrics-progress-text").textContent = `${lyricsLineIndex + 1} / ${lines.length}`;
+            document.getElementById("lyrics-line-text").textContent = lyricsRevealed
+                ? lines[lyricsLineIndex].en
+                : "🔒 가려져 있어요 — 기억나는 대로 불러보거나 입력해보세요";
+            writeInput.value = lyricsDraftText;
+            document.getElementById("lyrics-status-text").textContent = "마이크로 부르거나 아래에 직접 입력해서 암기를 확인해보세요";
+            updateLyricsRevealButtonUI();
+            updateLyricsListenButtonUI();
+        }
+
+        document.getElementById("lyrics-reveal-btn").addEventListener("click", () => {
+            lyricsRevealed = !lyricsRevealed;
+            renderLyricsLine();
+        });
+
+        function moveLyricsLine(delta) {
+            stopLyricsRecognition();
+            stopLyricsSynthesis();
+            const lines = getLyricsLines();
+            if(lines.length === 0) return;
+            lyricsLineIndex = (lyricsLineIndex + delta + lines.length) % lines.length;
+            lyricsDraftText = "";
+            lyricsRevealed = false;
+            saveLyricsProgress();
+            renderLyricsLine();
+        }
+        document.getElementById("lyrics-prev-btn").addEventListener("click", () => moveLyricsLine(-1));
+        document.getElementById("lyrics-next-btn").addEventListener("click", () => moveLyricsLine(1));
+
+        // 원어민 발음 듣기
+        let isLyricsTTSPlaying = false;
+        function updateLyricsListenButtonUI() {
+            const btn = document.getElementById("lyrics-listen-btn");
+            if(!btn) return;
+            if(isLyricsTTSPlaying) {
+                btn.innerHTML = '<i class="fa-solid fa-stop"></i> 정지';
+                btn.classList.remove("bg-cardGray", "text-textDark");
+                btn.classList.add("bg-red-50", "text-red-500", "border-red-200");
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-volume-high"></i> 원어민 발음 듣기';
+                btn.classList.remove("bg-red-50", "text-red-500", "border-red-200");
+                btn.classList.add("bg-cardGray", "text-textDark");
+            }
+            renderIcons(btn);
+        }
+        function stopLyricsSynthesis() {
+            if('speechSynthesis' in window) window.speechSynthesis.cancel();
+            isLyricsTTSPlaying = false;
+            updateLyricsListenButtonUI();
+        }
+        function speakLyricsLineText(text) {
+            if(!('speechSynthesis' in window) || !text) return;
+            stopLyricsRecognition();
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'en-US';
+            utter.rate = 0.95;
+            utter.onstart = () => { isLyricsTTSPlaying = true; updateLyricsListenButtonUI(); };
+            utter.onend = () => { isLyricsTTSPlaying = false; updateLyricsListenButtonUI(); };
+            utter.onerror = () => { isLyricsTTSPlaying = false; updateLyricsListenButtonUI(); };
+            window.speechSynthesis.speak(utter);
+        }
+        document.getElementById("lyrics-listen-btn").addEventListener("click", async () => {
+            if(isLyricsTTSPlaying) { stopLyricsSynthesis(); return; }
+            if(!('speechSynthesis' in window)) {
+                await showAlert("이 브라우저는 음성 합성(듣기 기능)을 지원하지 않아요.");
+                return;
+            }
+            const lines = getLyricsLines();
+            const line = lines[lyricsLineIndex];
+            if(!line) return;
+            speakLyricsLineText(line.en);
+        });
+
+        // 마이크로 부르기 — 말하기 탭과 동일한 Web Speech API 인식 방식(문장별 모드 기준)을
+        // 그대로 씀. 인식 객체는 말하기 탭과 별도로 관리해서 두 탭이 서로 간섭하지 않게 함
+        const LyricsSpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let lyricsRecognition = null;
+        let isLyricsRecording = false;
+        let lyricsLastTranscript = '';
+
+        function stopLyricsRecognition() {
+            if(lyricsRecognition && isLyricsRecording) {
+                try { lyricsRecognition.stop(); } catch(err) {}
+            }
+            isLyricsRecording = false;
+            const micBtn = document.getElementById("lyrics-mic-btn");
+            if(micBtn) micBtn.classList.remove("recording");
+        }
+
+        document.getElementById("lyrics-mic-btn").addEventListener("click", async () => {
+            const lines = getLyricsLines();
+            if(!lines[lyricsLineIndex]) return;
+
+            if(!LyricsSpeechRecognitionCtor) {
+                await showAlert("이 브라우저는 음성 인식을 지원하지 않아요. 안드로이드/PC의 Chrome 브라우저에서 이용해주세요.");
+                return;
+            }
+            if(isLyricsRecording) { stopLyricsRecognition(); return; }
+            stopLyricsSynthesis();
+
+            if(!lyricsRecognition) {
+                lyricsRecognition = new LyricsSpeechRecognitionCtor();
+                lyricsRecognition.lang = 'en-US';
+                lyricsRecognition.interimResults = false;
+                lyricsRecognition.maxAlternatives = 1;
+                lyricsRecognition.continuous = false;
+                lyricsRecognition.onresult = (e) => {
+                    let transcript = '';
+                    for(let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript + ' ';
+                    lyricsLastTranscript = transcript.trim();
+                };
+                lyricsRecognition.onerror = (e) => {
+                    isLyricsRecording = false;
+                    document.getElementById("lyrics-mic-btn").classList.remove("recording");
+                    if(e.error === 'no-speech') {
+                        document.getElementById("lyrics-status-text").textContent = "목소리를 못 들었어요. 마이크를 다시 눌러 불러보세요.";
+                    } else if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                        document.getElementById("lyrics-status-text").textContent = "마이크 권한을 허용해야 사용할 수 있어요.";
+                    } else {
+                        document.getElementById("lyrics-status-text").textContent = "음성 인식 중 오류가 발생했어요. 다시 시도해주세요.";
+                    }
+                };
+                lyricsRecognition.onend = () => {
+                    isLyricsRecording = false;
+                    document.getElementById("lyrics-mic-btn").classList.remove("recording");
+                    if(lyricsLastTranscript) {
+                        handleLyricsResult(lyricsLastTranscript, 'voice');
+                        lyricsLastTranscript = '';
+                    }
+                };
+            }
+
+            lyricsLastTranscript = '';
+            document.getElementById("lyrics-result-area").classList.add("hidden");
+            document.getElementById("lyrics-status-text").textContent = "듣고 있어요... 🎤";
+            isLyricsRecording = true;
+            document.getElementById("lyrics-mic-btn").classList.add("recording");
+            try {
+                lyricsRecognition.start();
+            } catch(err) {
+                isLyricsRecording = false;
+                document.getElementById("lyrics-mic-btn").classList.remove("recording");
+                document.getElementById("lyrics-status-text").textContent = "마이크를 시작하지 못했어요. 다시 시도해주세요.";
+            }
+        });
+
+        // 직접 입력해서 확인 — 말하기 탭과 동일하게 채점 로직(scoreSpeaking)을 재사용
+        document.getElementById("lyrics-write-submit-btn").addEventListener("click", async () => {
+            const lines = getLyricsLines();
+            const line = lines[lyricsLineIndex];
+            if(!line) return;
+            const typed = document.getElementById("lyrics-write-input").value.trim();
+            if(!typed) {
+                await showAlert("가사를 입력해주세요.");
+                return;
+            }
+            stopLyricsRecognition();
+            stopLyricsSynthesis();
+            handleLyricsResult(typed, 'typed');
+        });
+
+        // 이어서 학습하기 — 입력 중이던 텍스트도 디바운스 저장
+        let lyricsDraftSaveTimer = null;
+        function flushLyricsDraftSave() {
+            if(!lyricsDraftSaveTimer) return;
+            clearTimeout(lyricsDraftSaveTimer);
+            lyricsDraftSaveTimer = null;
+            saveLyricsProgress();
+        }
+        document.getElementById("lyrics-write-input").addEventListener("input", (e) => {
+            lyricsDraftText = e.target.value;
+            clearTimeout(lyricsDraftSaveTimer);
+            lyricsDraftSaveTimer = setTimeout(flushLyricsDraftSave, 400);
+        });
+
+        // 채점 결과 표시 — 말하기 탭의 scoreSpeaking()과 단어별 강조 스타일을 그대로 재사용
+        function handleLyricsResult(transcript, source) {
+            const lines = getLyricsLines();
+            const line = lines[lyricsLineIndex];
+            if(!line) return;
+            const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(line.en, transcript);
+
+            document.getElementById("lyrics-status-text").textContent = source === 'typed'
+                ? "채점이 완료됐어요. 결과를 확인해보세요."
+                : "인식이 완료됐어요. 결과를 확인해보세요.";
+            document.getElementById("lyrics-result-label").innerHTML = (source === 'typed' ? "내가 입력한 가사" : "내가 부른 가사") + ' <span class="font-normal">(원문에 없는 단어는 노란 취소선)</span>';
+            const recognizedHtml = saidDisplay.map((w, idx) =>
+                matchedSaid[idx] ? escapeHtml(w) : `<span class="speak-word-extra">${escapeHtml(w)}</span>`
+            ).join(' ');
+            document.getElementById("lyrics-recognized-text").innerHTML = `"${recognizedHtml}"`;
+
+            document.getElementById("lyrics-result-line").innerHTML = targetDisplay.map((w, idx) =>
+                `<span class="${matched[idx] ? 'speak-word-correct' : 'speak-word-wrong'}">${escapeHtml(w)}</span>`
+            ).join(' ');
+
+            document.getElementById("lyrics-score-badge").textContent = `${percent}점 — ${speakingScoreMessage(percent)}`;
+            document.getElementById("lyrics-result-area").classList.remove("hidden");
+
+            lyricsRevealed = true; // 채점 후엔 실제 가사를 펼쳐서 비교하기 쉽게 함
+            document.getElementById("lyrics-line-text").textContent = line.en;
+            updateLyricsRevealButtonUI();
+        }
+
+        // ==================================================================
         // Library & Settings — 단어 목록(선택된 단어장)
         // ==================================================================
         function renderWordList() {
@@ -2454,7 +2772,6 @@
             renderWordList();
             renderDashboard();
             populateWordBookSelectors();
-            initFlashcard();
         });
 
         document.getElementById("input-goal-daily").value = userGoals.daily;
@@ -2525,6 +2842,7 @@
                 wordBooks, activeWordBookId,
                 readingBooks, activeReadingBookId,
                 speakingDays, activeSpeakingDayId,
+                lyricsSongs, activeLyricsSongId,
                 stats, userGoals, bqStats, progress, speakStats, speakEpisodeStats,
                 masteredWords: [...masteredWordSet]
             };
@@ -2555,6 +2873,15 @@
                 speakDraftText = "";
                 saveSpeakProgress();
             }
+            if(data.lyricsSongs && Array.isArray(data.lyricsSongs)) {
+                lyricsSongs = data.lyricsSongs;
+                activeLyricsSongId = data.activeLyricsSongId && lyricsSongs.find(s => s.id === data.activeLyricsSongId)
+                    ? data.activeLyricsSongId : (lyricsSongs[0] ? lyricsSongs[0].id : null);
+                lyricsLineIndex = 0;
+                lyricsDraftText = "";
+                lyricsRevealed = false;
+                saveLyricsProgress();
+            }
             if(data.stats) stats = data.stats;
             if(data.userGoals) userGoals = data.userGoals;
             if(data.bqStats) bqStats = data.bqStats;
@@ -2566,6 +2893,7 @@
             saveWordBooks(); saveActiveWordBookId();
             saveReadingBooks(); saveActiveReadingBookId();
             saveSpeakingDays(); saveActiveSpeakingDayId();
+            saveLyricsSongs(); saveActiveLyricsSongId();
             saveStats(stats); saveGoals(userGoals); saveBQStats(bqStats); saveProgress(progress); saveMasteredWordSet(); saveSpeakStats(); saveSpeakEpisodeStats();
 
             words = getActiveWordBook().words;
@@ -2576,8 +2904,10 @@
             populateWordBookSelectors();
             populateReadingBookSelectors();
             populateSpeakingDaySelectors();
+            populateLyricsSongSelectors();
             renderWordList();
             renderSpeakingManageList();
+            renderLyricsManageList();
             renderDashboard();
             updateQuizScoreDisplay();
             updateBQScore();
@@ -3123,6 +3453,99 @@
             reader.readAsText(file, 'utf-8');
         });
 
+        // ==================================================================
+        // 가사 관리 — 곡 추가/이름변경/삭제, 선택된 곡의 가사 줄 목록(줄 단위 삭제 가능)
+        // ==================================================================
+        function renderLyricsManageList() {
+            const container = document.getElementById("lyrics-manage-list");
+            if(!container) return;
+            const song = getActiveLyricsSong();
+            if(!song) {
+                container.innerHTML = `<div class="text-center py-6 text-textMuted text-xs">등록된 곡이 없습니다. "+ 곡 추가"로 새 곡을 등록해보세요.</div>`;
+                return;
+            }
+            if(song.lines.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-textMuted text-xs">이 곡에는 가사 줄이 없습니다.</div>`;
+                return;
+            }
+            container.innerHTML = "";
+            song.lines.forEach((line) => {
+                const item = document.createElement("div");
+                item.className = "flex justify-between items-start gap-2 bg-cardGray border border-divider rounded-lg p-2.5";
+                item.innerHTML = `
+                    <div class="text-xs font-semibold text-textDark break-words min-w-0">${escapeHtml(line.en)}</div>
+                    <button class="text-textMuted hover:text-red-500 p-1 text-sm shrink-0 delete-lyrics-line-btn"><i class="fa-solid fa-trash-can"></i></button>
+                `;
+                item.querySelector(".delete-lyrics-line-btn").addEventListener("click", () => {
+                    song.lines = song.lines.filter(l => l.id !== line.id);
+                    saveLyricsSongs();
+                    renderLyricsManageList();
+                    populateLyricsSongSelectors();
+                });
+                renderIcons(item);
+                container.appendChild(item);
+            });
+        }
+
+        document.getElementById("new-lyrics-song-btn").addEventListener("click", () => {
+            document.getElementById("new-lyrics-title-input").value = "";
+            document.getElementById("new-lyrics-lines-input").value = "";
+            document.getElementById("add-lyrics-modal").style.display = "flex";
+        });
+        document.getElementById("close-lyrics-modal-btn").addEventListener("click", () => {
+            document.getElementById("add-lyrics-modal").style.display = "none";
+        });
+        document.getElementById("save-new-lyrics-btn").addEventListener("click", async () => {
+            const titleVal = document.getElementById("new-lyrics-title-input").value.trim();
+            const linesVal = document.getElementById("new-lyrics-lines-input").value;
+            if(!titleVal) {
+                await showAlert("곡 제목을 입력해주세요.");
+                return;
+            }
+            const song = buildLyricsSong(titleVal, linesVal);
+            if(song.lines.length === 0) {
+                await showAlert("가사를 한 줄 이상 입력해주세요.");
+                return;
+            }
+            lyricsSongs.push(song);
+            activeLyricsSongId = song.id;
+            saveLyricsSongs();
+            saveActiveLyricsSongId();
+            lyricsLineIndex = 0;
+            lyricsDraftText = "";
+            lyricsRevealed = false;
+            saveLyricsProgress();
+            document.getElementById("add-lyrics-modal").style.display = "none";
+            populateLyricsSongSelectors();
+            renderLyricsManageList();
+        });
+
+        document.getElementById("rename-lyrics-song-btn").addEventListener("click", async () => {
+            const song = getActiveLyricsSong();
+            if(!song) { await showAlert("이름을 변경할 곡이 없습니다."); return; }
+            const name = await showPrompt("곡 제목을 입력하세요:", song.title);
+            if(!name || !name.trim()) return;
+            song.title = name.trim();
+            saveLyricsSongs();
+            populateLyricsSongSelectors();
+        });
+
+        document.getElementById("delete-lyrics-song-btn").addEventListener("click", async () => {
+            const song = getActiveLyricsSong();
+            if(!song) { await showAlert("삭제할 곡이 없습니다."); return; }
+            if(!(await showConfirm(`'${song.title}'을(를) 삭제할까요?`))) return;
+            lyricsSongs = lyricsSongs.filter(s => s.id !== song.id);
+            activeLyricsSongId = lyricsSongs[0] ? lyricsSongs[0].id : null;
+            saveLyricsSongs();
+            saveActiveLyricsSongId();
+            lyricsLineIndex = 0;
+            lyricsDraftText = "";
+            lyricsRevealed = false;
+            saveLyricsProgress();
+            populateLyricsSongSelectors();
+            renderLyricsManageList();
+        });
+
         // 대량 업로드용 예시 템플릿 다운로드
         function downloadTemplate(type) {
             let content, filename, mime;
@@ -3176,6 +3599,7 @@
         populateWordBookSelectors();
         populateReadingBookSelectors();
         populateSpeakingDaySelectors();
+        populateLyricsSongSelectors();
         renderDashboard();
         updateQuizScoreDisplay();
         renderSpeakAverageScore();
@@ -3205,10 +3629,13 @@
             'triangle-exclamation': '<path d="M12 2 L22 20 H2 Z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>',
             'trash-can': '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
             'microphone': '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
+            'music': '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
             'chevron-left': '<polyline points="15 18 9 12 15 6"/>',
             'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
             'volume-high': '<polygon points="4 9 8 9 12 5 12 19 8 15 4 15"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
-            'stop': '<rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" stroke="none"/>'
+            'stop': '<rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" stroke="none"/>',
+            'eye': '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>',
+            'eye-slash': '<path d="M1 1l22 22"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a17.9 17.9 0 0 1-3.2 4.1M6.6 6.6C3.5 8.4 1 12 1 12s4 7 11 7a10.6 10.6 0 0 0 5.4-1.5"/><path d="M14.1 14.1a3 3 0 1 1-4.2-4.2"/>'
         };
         const ICON_SIZE_MAP = {
             'text-[11px]': 11, 'text-[13px]': 13, 'text-xs': 12, 'text-sm': 14,
