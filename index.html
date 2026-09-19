@@ -488,6 +488,7 @@
                             <button id="reset-word-quiz-btn" class="bg-white border border-red-200 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">단어 퀴즈 기록</button>
                             <button id="reset-reading-quiz-btn" class="bg-white border border-red-200 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">독해 퀴즈 기록</button>
                             <button id="reset-streak-goal-btn" class="bg-white border border-red-200 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">연속일/목표 진행률</button>
+                            <button id="reset-speak-stats-btn" class="col-span-2 bg-white border border-red-200 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">말하기 평균/누적 기록</button>
                         </div>
 
                         <button id="reset-records-btn" class="w-full bg-red-500 text-white font-bold py-2.5 rounded-xl active:scale-95 transition-transform">전체 학습 기록 초기화</button>
@@ -797,7 +798,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.16.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.17.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2478,6 +2479,15 @@
             masteredWordSet = new Set(); // 목표 진행률 초기화 시 중복 카운팅 방지 목록도 함께 비움 (다시 마스터하면 카운트되도록)
             saveMasteredWordSet();
         }
+        function resetSpeakStatsCore() {
+            speakStats = { count: 0, sumPercent: 0 };
+            saveSpeakStats();
+            speakEpisodeStats = {};
+            saveSpeakEpisodeStats();
+            renderSpeakAverageScore();
+            renderEpisodeChips();
+            renderSpeakingManageList();
+        }
 
         // ==================================================================
         // 데이터 백업 / 복원 — 브라우저 저장공간이 초기화되는 상황에 대비한 보험
@@ -2662,13 +2672,20 @@
             await showAlert("연속 학습일과 목표 진행률이 초기화되었습니다.");
         });
 
+        document.getElementById("reset-speak-stats-btn").addEventListener("click", async () => {
+            if(!(await showConfirm("말하기 평균/누적 기록(전체 및 에피소드별)을 초기화할까요?\n말하기 문장·에피소드 내용은 삭제되지 않습니다."))) return;
+            resetSpeakStatsCore();
+            await showAlert("말하기 평균/누적 기록이 초기화되었습니다.");
+        });
+
         document.getElementById("reset-records-btn").addEventListener("click", async () => {
-            if(!(await showConfirm("정말 모든 학습 기록을 초기화할까요?\n\n- 모든 단어의 암기 레벨(Lv.)\n- 단어 퀴즈 / 독해 퀴즈 정답률\n- 연속 학습일, 목표 진행률\n\n단어장·독해집에 저장된 단어와 지문 자체는 삭제되지 않습니다.\n이 작업은 되돌릴 수 없습니다."))) return;
+            if(!(await showConfirm("정말 모든 학습 기록을 초기화할까요?\n\n- 모든 단어의 암기 레벨(Lv.)\n- 단어 퀴즈 / 독해 퀴즈 정답률\n- 연속 학습일, 목표 진행률\n- 말하기 평균/누적 기록\n\n단어장·독해집·말하기 문장에 저장된 내용 자체는 삭제되지 않습니다.\n이 작업은 되돌릴 수 없습니다."))) return;
 
             resetWordLevelsCore();
             resetWordQuizCore();
             resetReadingQuizCore();
             resetStreakGoalCore();
+            resetSpeakStatsCore();
 
             populateReadingBookSelectors();
             renderDashboard();
