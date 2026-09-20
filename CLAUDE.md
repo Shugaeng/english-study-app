@@ -70,13 +70,15 @@ STEP1~4 구성을 그대로 따라가는 화면입니다 — STEP1 우리말 보
     "title": "1분 말하기",
     "ko": "한글 전체 문단...",
     "en": "English full paragraph...",
-    "vocab": ["표현1:뜻1", "표현2:뜻2"]
+    "vocab": ["표현1:뜻1", "표현2:뜻2"],
+    "pattern": "English **full paragraph** * with pauses and key patterns marked..."
   },
   {
     "title": "2분 말하기",
     "ko": "한글 전체 문단...",
     "en": "English full paragraph...",
-    "vocab": ["표현3:뜻3"]
+    "vocab": ["표현3:뜻3"],
+    "pattern": "English full paragraph * with pauses and **key patterns** marked..."
   }
 ]
 ```
@@ -88,6 +90,13 @@ STEP1~4 구성을 그대로 따라가는 화면입니다 — STEP1 우리말 보
 - 교재에서 문단이 시간 단위(예: 1분/2분)로 묶여 있으면, 그 묶음 하나가 블록 하나가
   됩니다. 블록 제목은 교재 표기를 따르되, 마땅한 제목이 없으면 "1분 말하기"처럼
   시간 단위로 적어도 됩니다.
+- **`pattern` 필드(선택)** — 교재 STEP2 페이지(한 문장씩 끊어 말하기)에는 흔히
+  "\*"로 끊어 읽는 지점이 표시되고 핵심 패턴/표현이 굵게 강조되어 있습니다
+  (예: "I felt **completely burnt out** \* this week."). 사진에 이런 표시가
+  보이면, `en`과 마침표 위치·개수는 동일하게 유지한 채로 끊어 읽는 지점에는
+  `*`를, 굵게 강조된 부분은 `**표현**`으로 감싸서 `pattern` 필드에 넣어줍니다.
+  `pattern`이 없으면 STEP2에도 `en`이 그대로 표시되니, 교재 사진에 끊어 읽기/
+  강조 표시가 안 보이면 이 필드는 생략해도 됩니다.
 - `vocab`에는 그 블록에 포함된 문장들의 각주(핵심 표현/숙어)를 모아서 넣습니다 —
   같은 문장이 STEP1(개별 문장 페이지)과 STEP2(패턴 페이지) 등 여러 페이지에 걸쳐
   등장하면서 각주가 나뉘어 있을 수 있으니, Input 에피소드 JSON을 만들 때와
