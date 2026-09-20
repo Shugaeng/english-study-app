@@ -1036,7 +1036,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.25.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.25.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -4129,21 +4129,25 @@
                 document.getElementById("output-progress-text").textContent = "문단 전체";
             }
 
-            if(outputStep === 3) {
-                // STEP3는 영어 문단을 보면서 오디오를 따라 말하는 단계라 영어를 메인으로, 우리말은 참고용 보조 텍스트로
+            // STEP1은 우리말만 보면서 듣기, STEP2/STEP3는 교재처럼 영어 문장(문단)을 보면서
+            // 듣고 따라 말하는 단계라 영어가 메인 — STEP4만 우리말을 보고 기억해서 말함
+            if(outputStep === 2 || outputStep === 3) {
                 mainText.textContent = target.en;
-                subText.textContent = target.ko;
+                if(outputStep === 3) subText.textContent = target.ko; // STEP3만 참고용으로 우리말 보조 텍스트 추가 표시
             } else {
                 mainText.textContent = target.ko;
             }
 
+            const writeInputEl = document.getElementById("output-write-input");
             if(showMicWrite) {
-                document.getElementById("output-write-ko-hint").textContent = target.ko;
+                // STEP2는 위에 보이는 영어 문장을 그대로, STEP4는 우리말을 보고 떠올린 영어를 입력하는 것이므로 힌트도 그에 맞게
+                document.getElementById("output-write-ko-hint").textContent = outputStep === 2 ? target.en : target.ko;
+                writeInputEl.placeholder = outputStep === 2 ? "위 문장을 보고 따라 입력해보세요..." : "한글 해석을 보고 영어로 입력해보세요...";
             }
 
             const statusMessages = {
                 1: "듣기 버튼을 눌러 원어민 발음을 들어보세요",
-                2: "마이크로 말하거나 아래에 직접 입력해서 연습해보세요",
+                2: "영어 문장을 보고 따라 말하거나, 아래에 직접 입력해서 연습해보세요",
                 3: "듣기 버튼을 눌러 문단을 들으며 소리 내어 따라 말해보세요",
                 4: "우리말을 보고 2분 안에 영어 문단을 통째로 말해보세요"
             };
