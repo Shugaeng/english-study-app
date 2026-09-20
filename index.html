@@ -368,14 +368,29 @@
                         <p id="output-block-title" class="text-sm font-bold text-primary mt-2 min-w-0"></p>
                     </div>
 
+                    <!-- 교재 구성 그대로: STEP1 우리말 보면서 듣기 → STEP2 한 문장씩 끊어 말하기 →
+                         STEP3 들으면서 따라 말하기 → STEP4 2분 동안 영어로 말하기 -->
+                    <div id="output-step-tabs" class="grid grid-cols-4 gap-1 bg-cardGray rounded-xl p-1 mb-2"></div>
+                    <p id="output-step-desc" class="text-xs text-textMuted text-center mb-3"></p>
+
                     <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-6">
-                        <p id="output-ko-paragraph" class="text-xl font-bold text-textDark text-center leading-relaxed py-4 whitespace-pre-line">이 Day에는 아직 Output 자료가 없어요</p>
+                        <div class="flex justify-center items-center text-xs text-textMuted font-medium mb-3">
+                            <span id="output-progress-text">0 / 0</span>
+                        </div>
+                        <p id="output-main-text" class="text-xl font-bold text-textDark text-center leading-relaxed py-2 whitespace-pre-line">이 Day에는 아직 Output 자료가 없어요</p>
+                        <p id="output-sub-text" class="hidden text-sm text-textMuted text-center leading-relaxed pb-2 whitespace-pre-line"></p>
 
                         <div id="output-status-text" class="text-center text-xs text-textMuted min-h-[16px] mb-2">설정 탭에서 Output 블록을 먼저 추가해주세요</div>
 
                         <div id="output-record-controls" class="flex items-center justify-center gap-6 mt-4">
+                            <button id="output-prev-btn" class="w-10 h-10 rounded-full bg-cardGray flex items-center justify-center text-textMuted active:scale-95 transition-transform">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
                             <button id="output-mic-btn" class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl shadow-md shadow-primary/30 active:scale-95 transition-transform">
                                 <i class="fa-solid fa-microphone"></i>
+                            </button>
+                            <button id="output-next-btn" class="w-10 h-10 rounded-full bg-cardGray flex items-center justify-center text-textMuted active:scale-95 transition-transform">
+                                <i class="fa-solid fa-chevron-right"></i>
                             </button>
                         </div>
 
@@ -383,7 +398,7 @@
                             <i class="fa-solid fa-volume-high"></i> 원어민 발음 듣기
                         </button>
 
-                        <div class="flex items-center gap-3 my-4">
+                        <div id="output-write-divider" class="flex items-center gap-3 my-4">
                             <div class="flex-1 h-px bg-divider"></div>
                             <span class="text-[11px] text-textMuted font-medium">또는 직접 입력해서 연습</span>
                             <div class="flex-1 h-px bg-divider"></div>
@@ -391,7 +406,7 @@
 
                         <div id="output-write-area">
                             <p id="output-write-ko-hint" class="text-sm font-bold text-textDark bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 mb-2 leading-relaxed whitespace-pre-line"></p>
-                            <textarea id="output-write-input" rows="4" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-3 text-sm font-medium text-textDark resize-none" placeholder="한글 해석을 보고 영어 문단을 통째로 입력해보세요..."></textarea>
+                            <textarea id="output-write-input" rows="4" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-3 text-sm font-medium text-textDark resize-none" placeholder="한글 해석을 보고 영어로 입력해보세요..."></textarea>
                             <button id="output-write-submit-btn" class="w-full mt-3 bg-primary text-white font-bold py-3 rounded-xl shadow-md shadow-primary/30 active:scale-95 transition-transform">채점하기</button>
                         </div>
                     </div>
@@ -399,7 +414,7 @@
                     <div id="output-result-area" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card">
                         <div class="text-xs font-bold text-textMuted mb-1" id="output-result-label">내가 말한 문단 <span class="font-normal">(원문에 없는 단어는 노란 취소선)</span></div>
                         <p id="output-recognized-text" class="text-sm text-textMuted mb-3"></p>
-                        <div class="text-xs font-bold text-textMuted mb-2">목표 문단 <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span></div>
+                        <div class="text-xs font-bold text-textMuted mb-2" id="output-result-target-label">목표 문단 <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span></div>
                         <p id="output-result-paragraph" class="text-lg leading-relaxed text-textDark mb-4"></p>
 
                         <div id="output-wrong-words-wrap" class="hidden mb-4">
@@ -600,7 +615,7 @@
                         <div class="flex justify-between items-center mb-3">
                             <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-book-open-reader text-primary"></i> 말하기 OUTPUT 자료 관리 (Day1~40)</h2>
                         </div>
-                        <p class="text-[11px] text-textMuted mb-3">OUTPUT은 긴 문단을 <strong>통째로</strong> 듣고 따라 말하거나 입력해서 연습하는 용도예요. 문장으로 쪼개지 않고 블록 하나가 그대로 연습 단위가 됩니다.</p>
+                        <p class="text-[11px] text-textMuted mb-3">OUTPUT 블록 하나가 교재의 STEP1~4를 그대로 따라가는 연습 단위예요(우리말 보면서 듣기 → 한 문장씩 끊어 말하기 → 들으면서 따라 말하기 → 문단 통째로 말하기). 문단은 마침표 기준으로 자동으로 문장 단위로도 나뉩니다.</p>
                         <select class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeSpeakingDay(this.value)"></select>
                         <div class="grid grid-cols-2 gap-2 mb-2">
                             <button id="add-output-block-btn" class="bg-primary text-white text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">블록 추가</button>
@@ -763,11 +778,11 @@
                         <input type="text" id="new-output-title-input" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark" placeholder="예: 1분 말하기">
                     </div>
                     <div>
-                        <label class="text-xs text-textMuted font-medium block mb-1">한글 전체 문단 (통째로 연습, 문장으로 나뉘지 않음)</label>
+                        <label class="text-xs text-textMuted font-medium block mb-1">한글 전체 문단 (마침표 기준으로 자동 분리됨)</label>
                         <textarea id="new-output-ko-input" rows="4" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: 토요일에는 늦잠을 자고 싶었어요. 대신 러닝을 하러 가기로 했어요."></textarea>
                     </div>
                     <div>
-                        <label class="text-xs text-textMuted font-medium block mb-1">영어 전체 문단 (채점 기준)</label>
+                        <label class="text-xs text-textMuted font-medium block mb-1">영어 전체 문단 (채점 기준, 마침표 기준으로 자동 분리됨)</label>
                         <textarea id="new-output-en-input" rows="4" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I wanted to sleep in on Saturday. I chose to go running instead."></textarea>
                     </div>
                     <div>
@@ -1021,7 +1036,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.24.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.25.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1102,16 +1117,13 @@
             };
         }
 
-        // 말하기 OUTPUT 블록 — Input(에피소드)과 달리 문장으로 쪼개지 않고 문단 통째로
-        // 듣고 따라 말하기/입력해서 연습하는 용도. vocab 형식은 에피소드와 동일("표현:뜻")
+        // 말하기 OUTPUT 블록 — 데이터 모양은 Input 에피소드와 완전히 동일(문장 단위로도
+        // 쪼개져 있음). STEP1/STEP2는 문장 단위로, STEP3/STEP4는 문장을 이어붙인 문단
+        // 전체로 같은 데이터를 다르게 사용함
         function buildOutputBlock(title, koParagraph, enParagraph, vocab) {
-            return {
-                id: uid(),
-                title: (title || '').trim() || '제목 없는 블록',
-                ko: (koParagraph || '').trim(),
-                en: (enParagraph || '').trim(),
-                vocab: Array.isArray(vocab) ? vocab.filter(v => typeof v === 'string' && v.trim()) : []
-            };
+            const block = buildSpeakingEpisode(title, koParagraph, enParagraph, vocab);
+            if(!title || !title.trim()) block.title = '제목 없는 블록';
+            return block;
         }
 
         // ==================================================================
@@ -1521,6 +1533,8 @@
             speakDraftText = "";
             saveSpeakProgress();
             outputBlockIndex = 0;
+            outputStep = 1;
+            outputSentenceIndex = 0;
             outputDraftText = "";
             populateSpeakingDaySelectors();
 
@@ -1993,6 +2007,8 @@
         let speakDraftText = ""; // 직접 입력 중이던(아직 채점 안 한) 텍스트 — 현재 위치(에피소드/문장/모드)에만 유효
         let outputBlockIndex = 0; // 현재 Day 안에서 선택된 OUTPUT 블록 인덱스
         let outputDraftText = ""; // OUTPUT 화면에서 직접 입력 중이던(아직 채점 안 한) 텍스트
+        let outputStep = 1; // 교재 구성 그대로: 1=우리말 보면서 듣기, 2=한 문장씩 끊어 말하기, 3=들으면서 따라 말하기, 4=2분 동안 영어로 말하기
+        let outputSentenceIndex = 0; // STEP1/STEP2에서 지금 보고 있는 문장 인덱스
 
         // 이어서 학습하기 — 앱을 껐다 켜도(또는 다른 탭에 갔다 와도) 마지막으로 보던
         // 에피소드/문장/모드와, 그때 입력창에 쓰고 있던(아직 채점 안 한) 텍스트까지 그대로
@@ -2185,9 +2201,13 @@
         function enterSpeakingOutput() {
             const blocks = getOutputBlocks();
             if(outputBlockIndex >= blocks.length || outputBlockIndex < 0) outputBlockIndex = 0;
+            outputStep = 1; // Output 화면에 들어올 때는 항상 STEP1부터 (교재 순서 그대로)
+            outputSentenceIndex = 0;
+            outputDraftText = "";
             showSpeakingView('output');
             renderOutputBlockChips();
-            renderOutputBlock();
+            renderOutputStepTabs();
+            renderOutputStep();
         }
         document.getElementById("speak-select-input-btn").addEventListener("click", enterSpeakingInput);
         document.getElementById("speak-select-output-btn").addEventListener("click", enterSpeakingOutput);
@@ -3183,6 +3203,8 @@
                 speakDraftText = "";
                 saveSpeakProgress();
                 outputBlockIndex = 0;
+                outputStep = 1;
+                outputSentenceIndex = 0;
                 outputDraftText = "";
             }
             if(data.lyricsSongs && Array.isArray(data.lyricsSongs)) {
@@ -3790,7 +3812,7 @@
                     <div class="flex justify-between items-center gap-2">
                         <button class="flex items-center gap-1.5 min-w-0 text-left toggle-output-block-btn">
                             <i class="fa-solid fa-chevron-right text-[10px] text-textMuted shrink-0 transition-transform"></i>
-                            <div class="text-xs font-bold text-textDark break-words min-w-0">${idx + 1}. ${escapeHtml(block.title)} ${(block.vocab && block.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${block.vocab.length}개</span>` : ''}</div>
+                            <div class="text-xs font-bold text-textDark break-words min-w-0">${idx + 1}. ${escapeHtml(block.title)} <span class="font-normal text-textMuted">(문장 ${block.sentences.length}개)</span> ${(block.vocab && block.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${block.vocab.length}개</span>` : ''}</div>
                         </button>
                         <div class="flex items-center gap-1 shrink-0">
                             <button class="text-[11px] font-semibold text-primary px-2 py-1 rename-output-block-btn">이름변경</button>
@@ -3798,8 +3820,13 @@
                         </div>
                     </div>
                     <div class="output-block-detail hidden mt-1.5 bg-white border border-divider rounded-lg p-2.5">
-                        <div class="text-xs font-bold text-textDark break-words">${escapeHtml(block.ko)}</div>
-                        <div class="text-[11px] text-primary mt-1 break-words">${escapeHtml(block.en)}</div>
+                        <div class="text-[11px] text-textMuted mb-1.5">문장 ${block.sentences.length}개</div>
+                        ${block.sentences.map(s => `
+                            <div class="text-xs mb-1.5">
+                                <div class="font-bold text-textDark break-words">${escapeHtml(s.ko)}</div>
+                                <div class="text-primary mt-0.5 break-words">${escapeHtml(s.en)}</div>
+                            </div>
+                        `).join('')}
                     </div>
                 `;
 
@@ -3849,10 +3876,17 @@
             const day = getActiveSpeakingDay();
             if(!Array.isArray(day.outputBlocks)) day.outputBlocks = [];
             const block = buildOutputBlock(titleVal || `${day.outputBlocks.length + 1}분 말하기`, koVal, enVal, vocabVal);
+            if(block.sentences.length === 0) {
+                await showAlert("문장을 나누지 못했습니다. 마침표(. ! ?)로 끝나는 문장인지 확인해주세요.");
+                return;
+            }
             day.outputBlocks.push(block);
             saveSpeakingDays();
             document.getElementById("add-output-modal").style.display = "none";
             renderOutputManageList();
+            if(block.mismatched) {
+                await showAlert(`한글/영어 문장 수가 서로 달라서, 짧은 쪽 기준으로 ${block.sentences.length}개 문장만 짝지어졌어요. 목록에서 확인해주세요.`);
+            }
         });
 
         document.getElementById("clear-output-day-btn").addEventListener("click", async () => {
@@ -3865,8 +3899,8 @@
             renderOutputManageList();
         });
 
-        // title(선택)/ko/en(전체 문단) 키를 가진 JSON 배열 텍스트를 파싱해 각 항목을
-        // 하나의 OUTPUT 블록으로 만듦 (에피소드와 달리 문장으로 나누지 않고 문단 그대로 저장)
+        // title(선택)/ko/en(전체 문단, 또는 한글/영어) 키를 가진 JSON 배열 텍스트를 파싱해
+        // 각 항목을 하나의 OUTPUT 블록으로 만듦 (문단은 마침표 기준으로 자동으로 문장 단위로도 나뉨)
         function parseOutputFile(text) {
             const data = JSON.parse(text.replace(/^﻿/, ''));
             if(!Array.isArray(data)) throw new Error("JSON 배열([]) 형식이어야 합니다.");
@@ -3876,7 +3910,7 @@
                 const title = String(item.title ?? item['제목'] ?? `${idx + 1}분 말하기`).trim();
                 const vocab = item.vocab ?? item['핵심표현'] ?? item.notes ?? [];
                 return buildOutputBlock(title, koParagraph, enParagraph, vocab);
-            }).filter(b => b.ko && b.en);
+            }).filter(b => b.sentences.length > 0);
         }
 
         document.getElementById("import-output-btn").addEventListener("click", () => {
@@ -3905,10 +3939,19 @@
         });
 
         // ==================================================================
-        // 말하기 OUTPUT 연습 화면 — Input(에피소드)과 달리 문장별 모드 없이 블록(문단)
-        // 통째로만 연습함. 채점/음성인식/TTS 로직은 Input과 동일한 방식이지만, 서로 다른
-        // 화면에서 동시에 재생/녹음되지 않도록 상태를 독립적으로 관리함
+        // 말하기 OUTPUT 연습 화면 — 교재 구성(STEP1~4) 그대로 따라감.
+        // STEP1(듣기)/STEP2(문장 말하기)는 블록 안 문장을 하나씩, STEP3(따라 말하기)/
+        // STEP4(문단 말하기)는 그 블록의 문장을 이어붙인 문단 전체를 대상으로 삼음.
+        // 채점/음성인식/TTS 로직은 Input과 동일한 방식이지만, 서로 다른 화면에서 동시에
+        // 재생/녹음되지 않도록 상태를 독립적으로 관리함
         // ==================================================================
+        const OUTPUT_STEPS = [
+            { step: 1, label: 'STEP1', desc: '우리말 보면서 듣기' },
+            { step: 2, label: 'STEP2', desc: '한 문장씩 끊어 말하기' },
+            { step: 3, label: 'STEP3', desc: '들으면서 따라 말하기' },
+            { step: 4, label: 'STEP4', desc: '2분 동안 영어로 말하기' }
+        ];
+
         function renderOutputBlockChips() {
             const blocks = getOutputBlocks();
             const emptyEl = document.getElementById("output-block-empty");
@@ -3945,29 +3988,118 @@
             stopOutputRecognition();
             stopOutputSynthesis();
             outputBlockIndex = idx;
+            outputStep = 1; // 블록을 바꾸면 그 블록의 STEP1부터 다시 시작
+            outputSentenceIndex = 0;
             outputDraftText = "";
             renderOutputBlockChips();
-            renderOutputBlock();
+            renderOutputStepTabs();
+            renderOutputStep();
         }
 
         function getCurrentOutputBlock() {
             return getOutputBlocks()[outputBlockIndex] || null;
         }
 
-        function renderOutputBlock() {
+        function renderOutputStepTabs() {
+            const wrap = document.getElementById("output-step-tabs");
+            wrap.innerHTML = "";
+            OUTPUT_STEPS.forEach(s => {
+                const btn = document.createElement("button");
+                const active = s.step === outputStep;
+                btn.textContent = s.label;
+                btn.className = "py-2 rounded-lg text-[11px] font-bold transition-colors " +
+                    (active ? "bg-white text-primary shadow-sm" : "text-textMuted");
+                btn.addEventListener("click", () => changeOutputStep(s.step));
+                wrap.appendChild(btn);
+            });
+            const current = OUTPUT_STEPS.find(s => s.step === outputStep);
+            document.getElementById("output-step-desc").textContent = current ? `${current.label} · ${current.desc}` : "";
+        }
+
+        function changeOutputStep(step) {
+            if(step === outputStep) return;
+            stopOutputRecognition();
+            stopOutputSynthesis();
+            outputStep = step;
+            outputSentenceIndex = 0; // 스텝을 바꾸면 그 블록의 첫 문장부터
+            outputDraftText = "";
+            document.getElementById("output-result-area").classList.add("hidden");
+            renderOutputStepTabs();
+            renderOutputStep();
+        }
+
+        // STEP1/STEP2에서 쓰는, 지금 블록의 문장 목록
+        function getOutputPool() {
+            const block = getCurrentOutputBlock();
+            return block ? block.sentences : [];
+        }
+
+        // STEP3/STEP4는 문장을 이어붙인 문단 전체가 연습 대상
+        function isOutputWholeStep() {
+            return outputStep === 3 || outputStep === 4;
+        }
+
+        function getCurrentOutputTarget() {
+            const block = getCurrentOutputBlock();
+            if(!block || block.sentences.length === 0) return null;
+            if(isOutputWholeStep()) {
+                return {
+                    ko: block.sentences.map(s => s.ko).join(' '),
+                    en: block.sentences.map(s => s.en).join(' ')
+                };
+            }
+            const pool = getOutputPool();
+            if(outputSentenceIndex >= pool.length) outputSentenceIndex = 0;
+            return pool[outputSentenceIndex] || null;
+        }
+
+        function moveOutputSentence(delta) {
+            if(outputStep !== 1 && outputStep !== 2) return; // STEP3/4는 문단 전체라 이동할 문장이 따로 없음
+            stopOutputRecognition();
+            stopOutputSynthesis();
+            const pool = getOutputPool();
+            if(pool.length === 0) return;
+            outputSentenceIndex = (outputSentenceIndex + delta + pool.length) % pool.length;
+            outputDraftText = "";
+            document.getElementById("output-result-area").classList.add("hidden");
+            renderOutputStep();
+        }
+        document.getElementById("output-prev-btn").addEventListener("click", () => moveOutputSentence(-1));
+        document.getElementById("output-next-btn").addEventListener("click", () => moveOutputSentence(1));
+
+        function renderOutputStep() {
             const blocks = getOutputBlocks();
             const micBtn = document.getElementById("output-mic-btn");
             const listenBtn = document.getElementById("output-listen-btn");
+            const prevBtn = document.getElementById("output-prev-btn");
+            const nextBtn = document.getElementById("output-next-btn");
+            const writeArea = document.getElementById("output-write-area");
+            const writeDivider = document.getElementById("output-write-divider");
             const writeInput = document.getElementById("output-write-input");
             const writeSubmitBtn = document.getElementById("output-write-submit-btn");
+            const mainText = document.getElementById("output-main-text");
+            const subText = document.getElementById("output-sub-text");
             document.getElementById("output-result-area").classList.add("hidden");
-            writeInput.value = outputDraftText;
+
+            // STEP1(듣기)/STEP2(문장 말하기)만 이전/다음 문장 이동, STEP2/STEP4만 마이크·직접입력 노출
+            const showNav = (outputStep === 1 || outputStep === 2);
+            const showMicWrite = (outputStep === 2 || outputStep === 4);
+            const showSub = (outputStep === 3);
+
+            prevBtn.classList.toggle("invisible", !showNav);
+            nextBtn.classList.toggle("invisible", !showNav);
+            micBtn.classList.toggle("invisible", !showMicWrite);
+            writeArea.classList.toggle("hidden", !showMicWrite);
+            writeDivider.classList.toggle("hidden", !showMicWrite);
+            subText.classList.toggle("hidden", !showSub);
+
+            writeInput.value = showMicWrite ? outputDraftText : "";
 
             if(blocks.length === 0) {
-                document.getElementById("output-ko-paragraph").textContent = "이 Day에는 아직 Output 자료가 없어요";
+                document.getElementById("output-progress-text").textContent = "0 / 0";
+                mainText.textContent = "이 Day에는 아직 Output 자료가 없어요";
                 document.getElementById("output-status-text").textContent = "설정 탭에서 Output 블록을 먼저 추가해주세요";
                 micBtn.disabled = true;
-                micBtn.classList.add("opacity-40");
                 listenBtn.disabled = true;
                 listenBtn.classList.add("opacity-40");
                 writeInput.disabled = true;
@@ -3976,26 +4108,55 @@
                 return;
             }
             micBtn.disabled = false;
-            micBtn.classList.remove("opacity-40");
             listenBtn.disabled = false;
             listenBtn.classList.remove("opacity-40");
             writeInput.disabled = false;
             writeSubmitBtn.disabled = false;
             writeSubmitBtn.classList.remove("opacity-40");
 
-            const block = getCurrentOutputBlock();
-            document.getElementById("output-ko-paragraph").textContent = block.ko;
-            document.getElementById("output-write-ko-hint").textContent = block.ko;
-            document.getElementById("output-status-text").textContent = "마이크로 말하거나 아래에 직접 입력해서 연습해보세요";
+            const target = getCurrentOutputTarget();
+            if(!target) {
+                document.getElementById("output-progress-text").textContent = "0 / 0";
+                mainText.textContent = "이 블록에는 문장이 없어요";
+                document.getElementById("output-status-text").textContent = "설정 탭에서 문장을 확인해주세요";
+                return;
+            }
+
+            if(outputStep === 1 || outputStep === 2) {
+                const pool = getOutputPool();
+                document.getElementById("output-progress-text").textContent = `${outputSentenceIndex + 1} / ${pool.length}`;
+            } else {
+                document.getElementById("output-progress-text").textContent = "문단 전체";
+            }
+
+            if(outputStep === 3) {
+                // STEP3는 영어 문단을 보면서 오디오를 따라 말하는 단계라 영어를 메인으로, 우리말은 참고용 보조 텍스트로
+                mainText.textContent = target.en;
+                subText.textContent = target.ko;
+            } else {
+                mainText.textContent = target.ko;
+            }
+
+            if(showMicWrite) {
+                document.getElementById("output-write-ko-hint").textContent = target.ko;
+            }
+
+            const statusMessages = {
+                1: "듣기 버튼을 눌러 원어민 발음을 들어보세요",
+                2: "마이크로 말하거나 아래에 직접 입력해서 연습해보세요",
+                3: "듣기 버튼을 눌러 문단을 들으며 소리 내어 따라 말해보세요",
+                4: "우리말을 보고 2분 안에 영어 문단을 통째로 말해보세요"
+            };
+            document.getElementById("output-status-text").textContent = statusMessages[outputStep];
             updateOutputListenButtonUI();
         }
 
         document.getElementById("output-write-submit-btn").addEventListener("click", async () => {
-            const block = getCurrentOutputBlock();
-            if(!block) return;
+            const target = getCurrentOutputTarget();
+            if(!target) return;
             const typed = document.getElementById("output-write-input").value.trim();
             if(!typed) {
-                await showAlert("영어 문단을 입력해주세요.");
+                await showAlert(outputStep === 2 ? "영어 문장을 입력해주세요." : "영어 문단을 입력해주세요.");
                 return;
             }
             stopOutputRecognition();
@@ -4053,23 +4214,25 @@
                 await showAlert("이 브라우저는 음성 합성(듣기 기능)을 지원하지 않아요.");
                 return;
             }
-            const block = getCurrentOutputBlock();
-            if(!block) return;
-            speakOutputText(block.en);
+            const target = getCurrentOutputTarget();
+            if(!target) return;
+            speakOutputText(target.en);
         });
 
         function outputScoreMessage(percent) { return speakingScoreMessage(percent); }
 
         function handleOutputResult(transcript, source) {
             source = source || 'voice';
-            const block = getCurrentOutputBlock();
-            if(!block) return;
-            const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(block.en, transcript);
+            const target = getCurrentOutputTarget();
+            if(!target) return;
+            const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(target.en, transcript);
+            const unit = outputStep === 2 ? '문장' : '문단';
 
             document.getElementById("output-status-text").textContent = source === 'typed'
                 ? "채점이 완료됐어요. 결과를 확인해보세요."
                 : "인식이 완료됐어요. 결과를 확인해보세요.";
-            document.getElementById("output-result-label").innerHTML = (source === 'typed' ? "내가 입력한 문단" : "내가 말한 문단") + ' <span class="font-normal">(원문에 없는 단어는 노란 취소선)</span>';
+            document.getElementById("output-result-label").innerHTML = (source === 'typed' ? `내가 입력한 ${unit}` : `내가 말한 ${unit}`) + ' <span class="font-normal">(원문에 없는 단어는 노란 취소선)</span>';
+            document.getElementById("output-result-target-label").innerHTML = `목표 ${unit} <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span>`;
             const recognizedHtml = saidDisplay.map((w, idx) =>
                 matchedSaid[idx] ? escapeHtml(w) : `<span class="speak-word-extra">${escapeHtml(w)}</span>`
             ).join(' ');
@@ -4088,6 +4251,8 @@
             document.getElementById("output-result-area").classList.remove("hidden");
         }
 
+        // 교재 예문 밑 각주(핵심 표현/숙어)를 결과 화면에 함께 보여줌 — 블록에 등록된
+        // 표현이 있으면 지금 STEP/문장과 무관하게 항상 표시
         function renderOutputVocab() {
             const wrap = document.getElementById("output-vocab-wrap");
             const block = getCurrentOutputBlock();
@@ -4109,7 +4274,7 @@
             document.getElementById("output-write-input").value = "";
             outputDraftText = "";
             document.getElementById("output-result-area").classList.add("hidden");
-            document.getElementById("output-ko-paragraph").scrollIntoView({ block: "center", behavior: "smooth" });
+            document.getElementById("output-main-text").scrollIntoView({ block: "center", behavior: "smooth" });
         });
 
         function renderOutputWrongWords(targetDisplay, matched) {
@@ -4157,7 +4322,7 @@
         }
 
         document.getElementById("output-mic-btn").addEventListener("click", async () => {
-            if(!getCurrentOutputBlock()) return;
+            if(!getCurrentOutputTarget()) return;
 
             if(!OutputRecognitionCtor) {
                 await showAlert("이 브라우저는 음성 인식을 지원하지 않아요. 안드로이드/PC의 Chrome 브라우저에서 이용해주세요.");
@@ -4171,7 +4336,6 @@
                 outputRecognition.lang = 'en-US';
                 outputRecognition.interimResults = false;
                 outputRecognition.maxAlternatives = 1;
-                outputRecognition.continuous = true; // OUTPUT은 항상 문단 통째로 말하는 모드라 마이크를 다시 눌러야 종료됨
                 outputRecognition.onresult = (e) => {
                     let transcript = '';
                     for(let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript + ' ';
@@ -4198,9 +4362,12 @@
                 };
             }
 
+            outputRecognition.continuous = isOutputWholeStep(); // STEP2(문장)는 말 끝나면 자동 종료, STEP4(문단)는 다시 눌러야 종료
             outputLastTranscript = '';
             document.getElementById("output-result-area").classList.add("hidden");
-            document.getElementById("output-status-text").textContent = "듣고 있어요... 🎤 (다 말하면 마이크를 다시 눌러 종료)";
+            document.getElementById("output-status-text").textContent = isOutputWholeStep()
+                ? "듣고 있어요... 🎤 (다 말하면 마이크를 다시 눌러 종료)"
+                : "듣고 있어요... 🎤";
             isOutputRecording = true;
             document.getElementById("output-mic-btn").classList.add("recording");
             try {
