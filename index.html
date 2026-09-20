@@ -50,6 +50,7 @@
         .speak-word-wrong { text-decoration: underline dotted; text-decoration-color: #EA4335; text-decoration-thickness: 2px; text-underline-offset: 3px; color: #C5221F; }
         .speak-word-extra { background: #FEF3C7; color: #B45309; border-radius: 4px; padding: 0 3px; text-decoration: line-through; text-decoration-color: #B45309; }
         .speak-sentence-clickable { cursor: pointer; border-radius: 6px; padding: 2px 3px; transition: background-color 0.15s; }
+        .output-chunk-divider { color: #8B95A1; margin: 0 0.3em; font-weight: 700; }
         .speak-sentence-clickable:hover, .speak-sentence-clickable:active { background-color: rgba(91, 92, 240, 0.12); }
         #speak-mic-btn.recording, #lyrics-mic-btn.recording { animation: speak-pulse 1.2s ease-in-out infinite; background-color: #EA4335 !important; }
         @keyframes speak-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(234,67,53,0.4); } 50% { box-shadow: 0 0 0 14px rgba(234,67,53,0); } }
@@ -789,6 +790,11 @@
                         <label class="text-xs text-textMuted font-medium block mb-1">핵심 표현/각주 (선택, 한 줄에 하나씩 "표현:뜻")</label>
                         <textarea id="new-output-vocab-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: usual cafe:단골 카페&#10;focus:집중하다"></textarea>
                     </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">STEP2 끊어 말하기 표시 (선택, 영어 전체 문단과 마침표 개수를 맞춰주세요)</label>
+                        <textarea id="new-output-pattern-input" rows="4" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I felt **completely burnt out** * this week."></textarea>
+                        <p class="text-[11px] text-textMuted mt-1">*로 끊어 읽는 지점을 표시하고, **표현**으로 감싸면 STEP2 화면에서 굵게 강조돼요. 비워두면 STEP2에도 영어 전체 문단을 그대로 보여줍니다.</p>
+                    </div>
                 </div>
                 <div class="flex gap-2">
                     <button id="close-output-modal-btn" class="flex-1 bg-cardGray text-textMuted font-bold py-3 rounded-xl text-sm">취소</button>
@@ -1036,7 +1042,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.25.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.26.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1117,13 +1123,43 @@
             };
         }
 
-        // 말하기 OUTPUT 블록 — 데이터 모양은 Input 에피소드와 완전히 동일(문장 단위로도
+        // 말하기 OUTPUT 블록 — 데이터 모양은 Input 에피소드와 거의 동일(문장 단위로도
         // 쪼개져 있음). STEP1/STEP2는 문장 단위로, STEP3/STEP4는 문장을 이어붙인 문단
-        // 전체로 같은 데이터를 다르게 사용함
-        function buildOutputBlock(title, koParagraph, enParagraph, vocab) {
+        // 전체로 같은 데이터를 다르게 사용함.
+        // patternParagraph(선택): 교재 STEP2 페이지처럼 "*"로 끊어 말하는 구간을 나누고
+        // "**표현**"으로 핵심 패턴을 강조 표시한 버전 — 마침표 기준으로 en과 똑같이
+        // 문장 단위로 나눠서 각 문장의 sentence.pattern에 붙여줌(STEP2 화면 전용, 채점에는 안 씀)
+        function buildOutputBlock(title, koParagraph, enParagraph, vocab, patternParagraph) {
             const block = buildSpeakingEpisode(title, koParagraph, enParagraph, vocab);
             if(!title || !title.trim()) block.title = '제목 없는 블록';
+            if(patternParagraph && patternParagraph.trim()) {
+                const patternSentences = splitIntoSentences(patternParagraph);
+                block.sentences.forEach((s, idx) => {
+                    if(patternSentences[idx]) s.pattern = patternSentences[idx];
+                });
+            }
             return block;
+        }
+
+        // "*"로 끊어 말하는 구간을 나누고 "**표현**"을 굵게 강조해서 HTML로 렌더링
+        // (STEP2 화면에서 교재의 끊어 읽기/패턴 강조 표시를 그대로 보여주는 용도)
+        function renderPatternHtml(text) {
+            if(!text) return '';
+            let html = '';
+            let lastIndex = 0;
+            const regex = /\*\*(.+?)\*\*|\*/g;
+            let match;
+            while((match = regex.exec(text)) !== null) {
+                html += escapeHtml(text.slice(lastIndex, match.index));
+                if(match[1] !== undefined) {
+                    html += `<strong class="text-primary">${escapeHtml(match[1])}</strong>`;
+                } else {
+                    html += `<span class="output-chunk-divider">∗</span>`;
+                }
+                lastIndex = regex.lastIndex;
+            }
+            html += escapeHtml(text.slice(lastIndex));
+            return html;
         }
 
         // ==================================================================
@@ -3659,7 +3695,7 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-center gap-2">
                         <button class="flex items-center gap-1.5 min-w-0 text-left toggle-speaking-episode-btn">
-                            <i class="fa-solid fa-chevron-right text-[10px] text-textMuted shrink-0 transition-transform"></i>
+                            <i class="fa-solid fa-chevron-right chevron-toggle-icon text-[10px] text-textMuted shrink-0 transition-transform"></i>
                             <div class="text-xs font-bold text-textDark break-words min-w-0">${epIdx + 1}. ${escapeHtml(ep.title)} <span class="font-normal text-textMuted">(문장 ${ep.sentences.length}개)</span> ${(ep.vocab && ep.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${ep.vocab.length}개</span>` : ''} ${(getEpisodeAverage(ep.id) !== null) ? `<span class="text-[10px] font-normal text-primary">🎯 평균 ${getEpisodeAverage(ep.id)}%</span>` : ''}</div>
                         </button>
                         <div class="flex items-center gap-1 shrink-0">
@@ -3672,7 +3708,7 @@
 
                 card.querySelector(".toggle-speaking-episode-btn").addEventListener("click", () => {
                     card.querySelector(".speaking-episode-sentences").classList.toggle("hidden");
-                    card.querySelector(".toggle-speaking-episode-btn i").classList.toggle("rotate-90");
+                    card.querySelector(".chevron-toggle-icon").classList.toggle("rotate-90");
                 });
 
                 card.querySelector(".delete-speaking-episode-btn").addEventListener("click", async () => {
@@ -3811,8 +3847,8 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-center gap-2">
                         <button class="flex items-center gap-1.5 min-w-0 text-left toggle-output-block-btn">
-                            <i class="fa-solid fa-chevron-right text-[10px] text-textMuted shrink-0 transition-transform"></i>
-                            <div class="text-xs font-bold text-textDark break-words min-w-0">${idx + 1}. ${escapeHtml(block.title)} <span class="font-normal text-textMuted">(문장 ${block.sentences.length}개)</span> ${(block.vocab && block.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${block.vocab.length}개</span>` : ''}</div>
+                            <i class="fa-solid fa-chevron-right chevron-toggle-icon text-[10px] text-textMuted shrink-0 transition-transform"></i>
+                            <div class="text-xs font-bold text-textDark break-words min-w-0">${idx + 1}. ${escapeHtml(block.title)} <span class="font-normal text-textMuted">(문장 ${block.sentences.length}개)</span> ${(block.vocab && block.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${block.vocab.length}개</span>` : ''} ${block.sentences.some(s => s.pattern) ? `<span class="text-[10px] font-normal text-primary">✂️ STEP2 끊어읽기 표시됨</span>` : ''}</div>
                         </button>
                         <div class="flex items-center gap-1 shrink-0">
                             <button class="text-[11px] font-semibold text-primary px-2 py-1 rename-output-block-btn">이름변경</button>
@@ -3825,6 +3861,7 @@
                             <div class="text-xs mb-1.5">
                                 <div class="font-bold text-textDark break-words">${escapeHtml(s.ko)}</div>
                                 <div class="text-primary mt-0.5 break-words">${escapeHtml(s.en)}</div>
+                                ${s.pattern ? `<div class="text-textMuted mt-0.5 break-words">${renderPatternHtml(s.pattern)}</div>` : ''}
                             </div>
                         `).join('')}
                     </div>
@@ -3832,7 +3869,7 @@
 
                 card.querySelector(".toggle-output-block-btn").addEventListener("click", () => {
                     card.querySelector(".output-block-detail").classList.toggle("hidden");
-                    card.querySelector(".toggle-output-block-btn i").classList.toggle("rotate-90");
+                    card.querySelector(".chevron-toggle-icon").classList.toggle("rotate-90");
                 });
                 card.querySelector(".delete-output-block-btn").addEventListener("click", async () => {
                     if(!(await showConfirm(`'${block.title}' 블록을 삭제할까요?`))) return;
@@ -3858,6 +3895,7 @@
             document.getElementById("new-output-ko-input").value = "";
             document.getElementById("new-output-en-input").value = "";
             document.getElementById("new-output-vocab-input").value = "";
+            document.getElementById("new-output-pattern-input").value = "";
             document.getElementById("add-output-modal").style.display = "flex";
         });
         document.getElementById("close-output-modal-btn").addEventListener("click", () => {
@@ -3869,13 +3907,14 @@
             const enVal = document.getElementById("new-output-en-input").value.trim();
             const vocabVal = document.getElementById("new-output-vocab-input").value
                 .split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            const patternVal = document.getElementById("new-output-pattern-input").value.trim();
             if(!koVal || !enVal) {
                 await showAlert("한글 문단과 영어 문단을 모두 입력해주세요.");
                 return;
             }
             const day = getActiveSpeakingDay();
             if(!Array.isArray(day.outputBlocks)) day.outputBlocks = [];
-            const block = buildOutputBlock(titleVal || `${day.outputBlocks.length + 1}분 말하기`, koVal, enVal, vocabVal);
+            const block = buildOutputBlock(titleVal || `${day.outputBlocks.length + 1}분 말하기`, koVal, enVal, vocabVal, patternVal);
             if(block.sentences.length === 0) {
                 await showAlert("문장을 나누지 못했습니다. 마침표(. ! ?)로 끝나는 문장인지 확인해주세요.");
                 return;
@@ -3900,7 +3939,8 @@
         });
 
         // title(선택)/ko/en(전체 문단, 또는 한글/영어) 키를 가진 JSON 배열 텍스트를 파싱해
-        // 각 항목을 하나의 OUTPUT 블록으로 만듦 (문단은 마침표 기준으로 자동으로 문장 단위로도 나뉨)
+        // 각 항목을 하나의 OUTPUT 블록으로 만듦 (문단은 마침표 기준으로 자동으로 문장 단위로도 나뉨).
+        // pattern(선택): STEP2용 "*"/"**패턴**" 표시가 있는 영어 문단
         function parseOutputFile(text) {
             const data = JSON.parse(text.replace(/^﻿/, ''));
             if(!Array.isArray(data)) throw new Error("JSON 배열([]) 형식이어야 합니다.");
@@ -3909,7 +3949,8 @@
                 const enParagraph = String(item.en ?? item['영어'] ?? item.english ?? "").trim();
                 const title = String(item.title ?? item['제목'] ?? `${idx + 1}분 말하기`).trim();
                 const vocab = item.vocab ?? item['핵심표현'] ?? item.notes ?? [];
-                return buildOutputBlock(title, koParagraph, enParagraph, vocab);
+                const pattern = String(item.pattern ?? item['패턴'] ?? "").trim();
+                return buildOutputBlock(title, koParagraph, enParagraph, vocab, pattern);
             }).filter(b => b.sentences.length > 0);
         }
 
@@ -4131,9 +4172,13 @@
 
             // STEP1은 우리말만 보면서 듣기, STEP2/STEP3는 교재처럼 영어 문장(문단)을 보면서
             // 듣고 따라 말하는 단계라 영어가 메인 — STEP4만 우리말을 보고 기억해서 말함
-            if(outputStep === 2 || outputStep === 3) {
+            if(outputStep === 2) {
+                // STEP2는 교재처럼 "*"로 끊어 읽는 구간과 "**패턴**" 강조가 있으면 그대로 보여줌
+                const sentence = getOutputPool()[outputSentenceIndex];
+                mainText.innerHTML = renderPatternHtml((sentence && sentence.pattern) || target.en);
+            } else if(outputStep === 3) {
                 mainText.textContent = target.en;
-                if(outputStep === 3) subText.textContent = target.ko; // STEP3만 참고용으로 우리말 보조 텍스트 추가 표시
+                subText.textContent = target.ko; // STEP3만 참고용으로 우리말 보조 텍스트 추가 표시
             } else {
                 mainText.textContent = target.ko;
             }
@@ -4597,9 +4642,10 @@
                 content = JSON.stringify([
                     {
                         title: "1분 말하기",
-                        ko: "한글 전체 문단(문장으로 나누지 않고 통째로 넣어주세요)...",
-                        en: "English full paragraph (kept as one block, not split into sentences)...",
-                        vocab: ["usual cafe:단골 카페", "focus:집중하다"]
+                        ko: "한글 전체 문단... 마침표 기준으로 자동 분리됩니다.",
+                        en: "English full paragraph... split into sentences by period, same as Input.",
+                        vocab: ["usual cafe:단골 카페", "focus:집중하다"],
+                        pattern: "English **full paragraph** * split into sentences by period, same as Input."
                     }
                 ], null, 2);
                 filename = "말하기_output_템플릿.json"; mime = "application/json;charset=utf-8";
