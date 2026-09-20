@@ -245,17 +245,39 @@
                     <div class="flex justify-between items-end mb-3">
                         <div>
                             <h1 class="text-2xl font-bold text-textDark">말하기 연습 <i class="fa-solid fa-microphone text-primary ml-1"></i></h1>
-                            <p class="text-textMuted text-sm mt-1">한글 문장을 보고 영어로 말해보세요</p>
+                            <p id="speak-header-subtitle" class="text-textMuted text-sm mt-1">Input과 Output 중 연습할 방식을 골라주세요</p>
                         </div>
                         <div id="speak-avg-score-wrap" class="hidden text-right shrink-0">
                             <p id="speak-avg-score-text" class="text-lg font-extrabold text-primary leading-none"></p>
                             <p id="speak-avg-score-count" class="text-[11px] text-textMuted mt-1"></p>
                         </div>
                     </div>
-                    <select class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark" onchange="changeSpeakingDay(this.value)"></select>
+                    <select id="speak-day-select-header" class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark hidden" onchange="changeSpeakingDay(this.value)"></select>
                 </div>
 
-                <div class="px-6 pb-6">
+                <!-- Input / Output 선택 화면 -->
+                <div id="speak-view-select" class="px-6 pb-6">
+                    <button id="speak-select-input-btn" class="w-full bg-white border border-divider rounded-2xl p-5 shadow-card text-left mb-4 active:scale-95 transition-transform flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-microphone"></i></div>
+                        <div>
+                            <p class="text-base font-bold text-textDark">Input</p>
+                            <p class="text-xs text-textMuted mt-0.5">한글 문장을 보고 영어로 말해보는 기존 말하기 연습</p>
+                        </div>
+                    </button>
+                    <button id="speak-select-output-btn" class="w-full bg-white border border-divider rounded-2xl p-5 shadow-card text-left active:scale-95 transition-transform flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-book-open-reader"></i></div>
+                        <div>
+                            <p class="text-base font-bold text-textDark">Output</p>
+                            <p class="text-xs text-textMuted mt-0.5">긴 문단을 통째로 자유롭게 말해보는 연습 (준비 중)</p>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Input 연습 화면 -->
+                <div id="speak-input-content" class="px-6 pb-6 hidden">
+                    <button id="speak-back-to-select-btn" class="text-xs font-bold text-textMuted mb-3 flex items-center gap-1" onclick="showSpeakingView('select')">
+                        <i class="fa-solid fa-chevron-left"></i> Input / Output 선택으로
+                    </button>
                     <div id="speak-episode-empty" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card text-center text-sm text-textMuted mb-4">
                         이 Day에는 아직 에피소드가 없어요.<br>설정 탭에서 에피소드를 추가해주세요.
                     </div>
@@ -330,6 +352,16 @@
                         <button id="speak-retry-btn" class="w-full bg-textDark text-white font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-rotate-right"></i> 다시 풀기
                         </button>
+                    </div>
+                </div>
+
+                <!-- Output 연습 화면 (준비 중) -->
+                <div id="speak-output-content" class="px-6 pb-6 hidden">
+                    <button class="text-xs font-bold text-textMuted mb-3 flex items-center gap-1" onclick="showSpeakingView('select')">
+                        <i class="fa-solid fa-chevron-left"></i> Input / Output 선택으로
+                    </button>
+                    <div class="bg-white border border-divider rounded-2xl p-6 shadow-card text-center text-sm text-textMuted">
+                        Output 연습은 아직 준비 중이에요.<br>곧 추가될 예정입니다.
                     </div>
                 </div>
             </section>
@@ -885,7 +917,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.22.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.23.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1920,7 +1952,7 @@
         function renderSpeakAverageScore() {
             const wrap = document.getElementById("speak-avg-score-wrap");
             if(!wrap) return;
-            if(speakStats.count === 0) {
+            if(speakStats.count === 0 || speakingView !== 'input') {
                 wrap.classList.add("hidden");
                 return;
             }
@@ -1973,7 +2005,30 @@
             return item ? [item] : [];
         }
 
+        let speakingView = 'select'; // 'select' = Input/Output 선택 화면, 'input' = 기존 말하기 연습, 'output' = 문단 통째로 말하기(준비중)
+
+        // 말하기 탭에 들어올 때마다 Input/Output 선택 화면부터 보여줌
         function initSpeakingTab() {
+            stopSpeakingRecognition();
+            stopSpeakingSynthesis();
+            showSpeakingView('select');
+        }
+
+        function showSpeakingView(view) {
+            speakingView = view;
+            document.getElementById("speak-view-select").classList.toggle("hidden", view !== 'select');
+            document.getElementById("speak-input-content").classList.toggle("hidden", view !== 'input');
+            document.getElementById("speak-output-content").classList.toggle("hidden", view !== 'output');
+            document.getElementById("speak-day-select-header").classList.toggle("hidden", view !== 'input');
+            document.getElementById("speak-avg-score-wrap").classList.toggle("hidden", view !== 'input' || speakStats.count === 0);
+
+            const subtitleEl = document.getElementById("speak-header-subtitle");
+            if(view === 'input') subtitleEl.textContent = "한글 문장을 보고 영어로 말해보세요";
+            else if(view === 'output') subtitleEl.textContent = "긴 문단을 통째로 자유롭게 말해보세요";
+            else subtitleEl.textContent = "Input과 Output 중 연습할 방식을 골라주세요";
+        }
+
+        function enterSpeakingInput() {
             stopSpeakingRecognition();
             stopSpeakingSynthesis();
             const episodes = getSpeakingEpisodes();
@@ -1982,10 +2037,19 @@
             if(speakEpisodeIndex >= episodes.length || speakEpisodeIndex < 0) speakEpisodeIndex = 0;
             const pool = episodes[speakEpisodeIndex] ? episodes[speakEpisodeIndex].sentences : [];
             if(speakSentenceIndex >= pool.length || speakSentenceIndex < 0) speakSentenceIndex = 0;
+            showSpeakingView('input');
             renderEpisodeChips();
             renderSpeakModeToggle();
             renderSpeakingSentence();
         }
+
+        function enterSpeakingOutput() {
+            stopSpeakingRecognition();
+            stopSpeakingSynthesis();
+            showSpeakingView('output');
+        }
+        document.getElementById("speak-select-input-btn").addEventListener("click", enterSpeakingInput);
+        document.getElementById("speak-select-output-btn").addEventListener("click", enterSpeakingOutput);
 
         // 문장별 말하기 / 에피소드 전체 말하기 모드 전환 버튼 UI 갱신
         function renderSpeakModeToggle() {
