@@ -380,7 +380,6 @@
                             <span id="output-progress-text">0 / 0</span>
                         </div>
                         <p id="output-main-text" class="text-xl font-bold text-textDark text-center leading-relaxed py-2 whitespace-pre-line">이 Day에는 아직 Output 자료가 없어요</p>
-                        <p id="output-sub-text" class="hidden text-sm text-textMuted text-center leading-relaxed pb-2 whitespace-pre-line"></p>
 
                         <div id="output-status-text" class="text-center text-xs text-textMuted min-h-[16px] mb-2">설정 탭에서 Output 블록을 먼저 추가해주세요</div>
 
@@ -1048,7 +1047,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.28.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.28.2"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -4187,20 +4186,17 @@
             const writeInput = document.getElementById("output-write-input");
             const writeSubmitBtn = document.getElementById("output-write-submit-btn");
             const mainText = document.getElementById("output-main-text");
-            const subText = document.getElementById("output-sub-text");
             document.getElementById("output-result-area").classList.add("hidden");
 
             // STEP1(듣기)/STEP2(문장 말하기)만 이전/다음 문장 이동, STEP3(듣기 전용)만 마이크·직접입력 없음
             const showNav = (outputStep === 1 || outputStep === 2);
             const showMicWrite = (outputStep === 1 || outputStep === 2 || outputStep === 4);
-            const showSub = (outputStep === 3);
 
             prevBtn.classList.toggle("invisible", !showNav);
             nextBtn.classList.toggle("invisible", !showNav);
             micBtn.classList.toggle("invisible", !showMicWrite);
             writeArea.classList.toggle("hidden", !showMicWrite);
             writeDivider.classList.toggle("hidden", !showMicWrite);
-            subText.classList.toggle("hidden", !showSub);
 
             writeInput.value = showMicWrite ? outputDraftText : "";
 
@@ -4250,7 +4246,6 @@
                 const block = getCurrentOutputBlock();
                 const blankSource = block.sentences.map(s => s.blank || s.en).join(' ');
                 mainText.innerHTML = renderBlankedHtml(blankSource);
-                subText.textContent = target.ko; // STEP3만 참고용으로 우리말 보조 텍스트 추가 표시
             } else {
                 mainText.textContent = target.ko;
             }
