@@ -796,6 +796,11 @@
                         <textarea id="new-output-pattern-input" rows="4" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I felt **completely burnt out** * this week."></textarea>
                         <p class="text-[11px] text-textMuted mt-1">*로 끊어 읽는 지점을 표시하고, **표현**으로 감싸면 STEP2 화면에서 굵게 강조돼요. 비워두면 STEP2에도 영어 전체 문단을 그대로 보여줍니다.</p>
                     </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">STEP3 빈칸 표시 (선택, 영어 전체 문단과 마침표 개수를 맞춰주세요)</label>
+                        <textarea id="new-output-blank-input" rows="4" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: I felt completely **burnt** **out** this week."></textarea>
+                        <p class="text-[11px] text-textMuted mt-1">**단어**로 감싼 부분이 STEP3 화면에서 빈칸으로 가려져요. STEP2 끊어 말하기 표시와는 범위가 다를 수 있어 따로 입력합니다. 비워두면 STEP3에도 영어 전체 문단을 빈칸 없이 그대로 보여줍니다.</p>
+                    </div>
                 </div>
                 <div class="flex gap-2">
                     <button id="close-output-modal-btn" class="flex-1 bg-cardGray text-textMuted font-bold py-3 rounded-xl text-sm">취소</button>
@@ -1043,7 +1048,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.28.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.28.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1128,15 +1133,24 @@
         // 쪼개져 있음). STEP1/STEP2는 문장 단위로, STEP3/STEP4는 문장을 이어붙인 문단
         // 전체로 같은 데이터를 다르게 사용함.
         // patternParagraph(선택): 교재 STEP2 페이지처럼 "*"로 끊어 말하는 구간을 나누고
-        // "**표현**"으로 핵심 패턴을 강조 표시한 버전 — 마침표 기준으로 en과 똑같이
-        // 문장 단위로 나눠서 각 문장의 sentence.pattern에 붙여줌(STEP2 화면 전용, 채점에는 안 씀)
-        function buildOutputBlock(title, koParagraph, enParagraph, vocab, patternParagraph) {
+        // "**표현**"으로 핵심 패턴을 강조 표시한 버전(STEP2 화면 전용).
+        // blankParagraph(선택): 교재 STEP3 페이지처럼 "**단어**"로 표시한 부분을 빈칸으로
+        // 가려서 보여줄 버전(STEP3 화면 전용) — STEP2의 패턴 강조와 범위가 다를 수 있어
+        // 별도 필드로 관리함. 둘 다 en과 마찬가지로 마침표 기준으로 문장 단위로 나눠서
+        // 각 문장의 sentence.pattern / sentence.blank에 붙여줌(둘 다 채점에는 안 씀)
+        function buildOutputBlock(title, koParagraph, enParagraph, vocab, patternParagraph, blankParagraph) {
             const block = buildSpeakingEpisode(title, koParagraph, enParagraph, vocab);
             if(!title || !title.trim()) block.title = '제목 없는 블록';
             if(patternParagraph && patternParagraph.trim()) {
                 const patternSentences = splitIntoSentences(patternParagraph);
                 block.sentences.forEach((s, idx) => {
                     if(patternSentences[idx]) s.pattern = patternSentences[idx];
+                });
+            }
+            if(blankParagraph && blankParagraph.trim()) {
+                const blankSentences = splitIntoSentences(blankParagraph);
+                block.sentences.forEach((s, idx) => {
+                    if(blankSentences[idx]) s.blank = blankSentences[idx];
                 });
             }
             return block;
@@ -1163,9 +1177,9 @@
             return html;
         }
 
-        // STEP3(들으면서 따라 말하기)의 교재처럼, "**표현**"으로 표시된 핵심 패턴 부분만
-        // 빈칸으로 가리고 나머지는 그대로 보여줌(끊어 읽기 "*" 표시는 STEP3에는 없으므로 제거).
-        // pattern이 없는 문장은 빈칸 없이 en 그대로 보여줌
+        // STEP3(들으면서 따라 말하기)의 교재처럼, "**단어**"로 표시된 부분만 빈칸으로
+        // 가리고 나머지는 그대로 보여줌(sentence.blank 필드 전용).
+        // blank가 없는 문장은 빈칸 없이 en 그대로 보여줌
         function renderBlankedHtml(text) {
             if(!text) return '';
             let html = '';
@@ -3893,7 +3907,7 @@
                     <div class="flex justify-between items-center gap-2">
                         <button class="flex items-center gap-1.5 min-w-0 text-left toggle-output-block-btn">
                             <i class="fa-solid fa-chevron-right chevron-toggle-icon text-[10px] text-textMuted shrink-0 transition-transform"></i>
-                            <div class="text-xs font-bold text-textDark break-words min-w-0">${idx + 1}. ${escapeHtml(block.title)} <span class="font-normal text-textMuted">(문장 ${block.sentences.length}개)</span> ${(block.vocab && block.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${block.vocab.length}개</span>` : ''} ${block.sentences.some(s => s.pattern) ? `<span class="text-[10px] font-normal text-primary">✂️ STEP2 끊어읽기 표시됨</span>` : ''}</div>
+                            <div class="text-xs font-bold text-textDark break-words min-w-0">${idx + 1}. ${escapeHtml(block.title)} <span class="font-normal text-textMuted">(문장 ${block.sentences.length}개)</span> ${(block.vocab && block.vocab.length > 0) ? `<span class="text-[10px] font-normal text-emerald-600">📌 핵심표현 ${block.vocab.length}개</span>` : ''} ${block.sentences.some(s => s.pattern) ? `<span class="text-[10px] font-normal text-primary">✂️ STEP2 끊어읽기 표시됨</span>` : ''} ${block.sentences.some(s => s.blank) ? `<span class="text-[10px] font-normal text-primary">▭ STEP3 빈칸 표시됨</span>` : ''}</div>
                         </button>
                         <div class="flex items-center gap-1 shrink-0">
                             <button class="text-[11px] font-semibold text-primary px-2 py-1 rename-output-block-btn">이름변경</button>
@@ -3906,7 +3920,8 @@
                             <div class="text-xs mb-1.5">
                                 <div class="font-bold text-textDark break-words">${escapeHtml(s.ko)}</div>
                                 <div class="text-primary mt-0.5 break-words">${escapeHtml(s.en)}</div>
-                                ${s.pattern ? `<div class="text-textMuted mt-0.5 break-words">${renderPatternHtml(s.pattern)}</div>` : ''}
+                                ${s.pattern ? `<div class="text-textMuted mt-0.5 break-words">STEP2: ${renderPatternHtml(s.pattern)}</div>` : ''}
+                                ${s.blank ? `<div class="text-textMuted mt-0.5 break-words">STEP3: ${renderBlankedHtml(s.blank)}</div>` : ''}
                             </div>
                         `).join('')}
                     </div>
@@ -3942,6 +3957,7 @@
             document.getElementById("new-output-en-input").value = "";
             document.getElementById("new-output-vocab-input").value = "";
             document.getElementById("new-output-pattern-input").value = "";
+            document.getElementById("new-output-blank-input").value = "";
             document.getElementById("add-output-modal").style.display = "flex";
         });
         document.getElementById("close-output-modal-btn").addEventListener("click", () => {
@@ -3954,13 +3970,14 @@
             const vocabVal = document.getElementById("new-output-vocab-input").value
                 .split(/\r?\n/).map(line => line.trim()).filter(Boolean);
             const patternVal = document.getElementById("new-output-pattern-input").value.trim();
+            const blankVal = document.getElementById("new-output-blank-input").value.trim();
             if(!koVal || !enVal) {
                 await showAlert("한글 문단과 영어 문단을 모두 입력해주세요.");
                 return;
             }
             const day = getActiveSpeakingDay();
             if(!Array.isArray(day.outputBlocks)) day.outputBlocks = [];
-            const block = buildOutputBlock(titleVal || `${day.outputBlocks.length + 1}분 말하기`, koVal, enVal, vocabVal, patternVal);
+            const block = buildOutputBlock(titleVal || `${day.outputBlocks.length + 1}분 말하기`, koVal, enVal, vocabVal, patternVal, blankVal);
             if(block.sentences.length === 0) {
                 await showAlert("문장을 나누지 못했습니다. 마침표(. ! ?)로 끝나는 문장인지 확인해주세요.");
                 return;
@@ -3988,7 +4005,8 @@
 
         // title(선택)/ko/en(전체 문단, 또는 한글/영어) 키를 가진 JSON 배열 텍스트를 파싱해
         // 각 항목을 하나의 OUTPUT 블록으로 만듦 (문단은 마침표 기준으로 자동으로 문장 단위로도 나뉨).
-        // pattern(선택): STEP2용 "*"/"**패턴**" 표시가 있는 영어 문단
+        // pattern(선택): STEP2용 "*"/"**패턴**" 표시가 있는 영어 문단, blank(선택): STEP3용
+        // "**단어**" 빈칸 표시가 있는 영어 문단
         function parseOutputFile(text) {
             const data = JSON.parse(text.replace(/^﻿/, ''));
             if(!Array.isArray(data)) throw new Error("JSON 배열([]) 형식이어야 합니다.");
@@ -3998,7 +4016,8 @@
                 const title = String(item.title ?? item['제목'] ?? `${idx + 1}분 말하기`).trim();
                 const vocab = item.vocab ?? item['핵심표현'] ?? item.notes ?? [];
                 const pattern = String(item.pattern ?? item['패턴'] ?? "").trim();
-                return buildOutputBlock(title, koParagraph, enParagraph, vocab, pattern);
+                const blank = String(item.blank ?? item['빈칸'] ?? "").trim();
+                return buildOutputBlock(title, koParagraph, enParagraph, vocab, pattern, blank);
             }).filter(b => b.sentences.length > 0);
         }
 
@@ -4226,10 +4245,10 @@
                 const sentence = getOutputPool()[outputSentenceIndex];
                 mainText.innerHTML = renderPatternHtml((sentence && sentence.pattern) || target.en);
             } else if(outputStep === 3) {
-                // STEP3는 교재처럼 "**패턴**"으로 표시된 핵심 부분만 빈칸으로 가려서 보여줌
-                // (pattern이 없는 문장은 빈칸 없이 en 그대로) — 듣기 버튼 음성은 항상 전체 문장
+                // STEP3는 교재처럼 "**단어**"로 표시된 핵심 단어만 빈칸으로 가려서 보여줌
+                // (blank가 없는 문장은 빈칸 없이 en 그대로) — 듣기 버튼 음성은 항상 전체 문장
                 const block = getCurrentOutputBlock();
-                const blankSource = block.sentences.map(s => s.pattern || s.en).join(' ');
+                const blankSource = block.sentences.map(s => s.blank || s.en).join(' ');
                 mainText.innerHTML = renderBlankedHtml(blankSource);
                 subText.textContent = target.ko; // STEP3만 참고용으로 우리말 보조 텍스트 추가 표시
             } else {
@@ -4716,7 +4735,8 @@
                         ko: "한글 전체 문단... 마침표 기준으로 자동 분리됩니다.",
                         en: "English full paragraph... split into sentences by period, same as Input.",
                         vocab: ["usual cafe:단골 카페", "focus:집중하다"],
-                        pattern: "English **full paragraph** * split into sentences by period, same as Input."
+                        pattern: "English **full paragraph** * split into sentences by period, same as Input.",
+                        blank: "English full **paragraph** split into sentences by **period**, same as Input."
                     }
                 ], null, 2);
                 filename = "말하기_output_템플릿.json"; mime = "application/json;charset=utf-8";
