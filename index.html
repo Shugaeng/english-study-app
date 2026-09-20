@@ -253,7 +253,7 @@
                             <p id="speak-avg-score-count" class="text-[11px] text-textMuted mt-1"></p>
                         </div>
                     </div>
-                    <select id="speak-day-select-header" class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark hidden" onchange="changeSpeakingDay(this.value)"></select>
+                    <select id="speak-day-select-header" class="book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark hidden" onchange="changeSpeakingDay(this.value)"></select>
                 </div>
 
                 <!-- Input / Output 선택 화면 -->
@@ -617,7 +617,7 @@
                             <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-book-open-reader text-primary"></i> 말하기 OUTPUT 자료 관리 (Day1~40)</h2>
                         </div>
                         <p class="text-[11px] text-textMuted mb-3">OUTPUT 블록 하나가 교재의 STEP1~4를 그대로 따라가는 연습 단위예요(우리말 보면서 듣기 → 한 문장씩 끊어 말하기 → 들으면서 따라 말하기 → 문단 통째로 말하기). 문단은 마침표 기준으로 자동으로 문장 단위로도 나뉩니다.</p>
-                        <select class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeSpeakingDay(this.value)"></select>
+                        <select class="output-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeSpeakingDay(this.value)"></select>
                         <div class="grid grid-cols-2 gap-2 mb-2">
                             <button id="add-output-block-btn" class="bg-primary text-white text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">블록 추가</button>
                             <button id="import-output-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">가져오기</button>
@@ -1042,7 +1042,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.26.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.26.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1553,11 +1553,33 @@
             if(activePanel && activePanel.id === 'panel-blankquiz') newBlankQuestion();
         }
 
-        // Day1~40 선택 드롭다운은 말하기 탭과 설정 탭(문장 관리)이 함께 씀 — 하나만 있는 activeSpeakingDayId를 공유
+        // Day1~40 선택 드롭다운은 말하기 탭(Input/Output)과 설정 탭(문장 관리)이 함께 씀 —
+        // 하나만 있는 activeSpeakingDayId를 공유하되, Input(에피소드/문장 개수)과
+        // Output(블록/문장 개수)은 셀 수 있는 대상이 서로 달라서 라벨을 따로 만듦
+        // (같은 라벨을 쓰면 Output 쪽에도 Input 에피소드 개수가 잘못 표시됨)
+        function buildInputDayOptionsHtml() {
+            return speakingDays.map(d => `<option value="${d.id}" ${d.id===activeSpeakingDayId?'selected':''}>${escapeHtml(d.name)} (에피소드 ${d.episodes.length}개 · 문장 ${getSpeakingDaySentenceCount(d)}개)</option>`).join('');
+        }
+        function buildOutputDayOptionsHtml() {
+            return speakingDays.map(d => {
+                const blocks = Array.isArray(d.outputBlocks) ? d.outputBlocks : [];
+                const sentCount = blocks.reduce((sum, b) => sum + b.sentences.length, 0);
+                return `<option value="${d.id}" ${d.id===activeSpeakingDayId?'selected':''}>${escapeHtml(d.name)} (블록 ${blocks.length}개 · 문장 ${sentCount}개)</option>`;
+            }).join('');
+        }
+
         function populateSpeakingDaySelectors() {
-            document.querySelectorAll('.speaking-day-select').forEach(sel => {
-                sel.innerHTML = speakingDays.map(d => `<option value="${d.id}" ${d.id===activeSpeakingDayId?'selected':''}>${escapeHtml(d.name)} (에피소드 ${d.episodes.length}개 · 문장 ${getSpeakingDaySentenceCount(d)}개)</option>`).join('');
-            });
+            document.querySelectorAll('.speaking-day-select').forEach(sel => { sel.innerHTML = buildInputDayOptionsHtml(); });
+            document.querySelectorAll('.output-day-select').forEach(sel => { sel.innerHTML = buildOutputDayOptionsHtml(); });
+            refreshSpeakDayHeaderSelect(); // 말하기 탭 상단 공용 셀렉트는 지금 보고 있는 화면(Input/Output)에 맞는 라벨로 채움
+        }
+
+        // 말하기 탭 상단의 Day 셀렉트는 Input/Output 화면이 공유해서 쓰는 하나의 <select>라,
+        // 지금 speakingView가 무엇이냐에 따라 보여줄 라벨(에피소드 개수 vs 블록 개수)을 다시 채움
+        function refreshSpeakDayHeaderSelect() {
+            const sel = document.getElementById("speak-day-select-header");
+            if(!sel) return;
+            sel.innerHTML = speakingView === 'output' ? buildOutputDayOptionsHtml() : buildInputDayOptionsHtml();
         }
 
         function changeSpeakingDay(id) {
@@ -2214,6 +2236,7 @@
             document.getElementById("speak-output-content").classList.toggle("hidden", view !== 'output');
             document.getElementById("speak-day-select-header").classList.toggle("hidden", view === 'select');
             document.getElementById("speak-avg-score-wrap").classList.toggle("hidden", view !== 'input' || speakStats.count === 0);
+            refreshSpeakDayHeaderSelect(); // Input/Output 중 어느 화면인지에 맞는 라벨(에피소드 개수 vs 블록 개수)로 갱신
 
             const subtitleEl = document.getElementById("speak-header-subtitle");
             if(view === 'input') subtitleEl.textContent = "한글 문장을 보고 영어로 말해보세요";
@@ -3876,6 +3899,7 @@
                     day.outputBlocks = day.outputBlocks.filter(b => b.id !== block.id);
                     saveSpeakingDays();
                     renderOutputManageList();
+                    populateSpeakingDaySelectors();
                 });
                 card.querySelector(".rename-output-block-btn").addEventListener("click", async () => {
                     const name = await showPrompt("블록 제목을 입력하세요:", block.title);
@@ -3923,6 +3947,7 @@
             saveSpeakingDays();
             document.getElementById("add-output-modal").style.display = "none";
             renderOutputManageList();
+            populateSpeakingDaySelectors();
             if(block.mismatched) {
                 await showAlert(`한글/영어 문장 수가 서로 달라서, 짧은 쪽 기준으로 ${block.sentences.length}개 문장만 짝지어졌어요. 목록에서 확인해주세요.`);
             }
@@ -3936,6 +3961,7 @@
             day.outputBlocks = [];
             saveSpeakingDays();
             renderOutputManageList();
+            populateSpeakingDaySelectors();
         });
 
         // title(선택)/ko/en(전체 문단, 또는 한글/영어) 키를 가진 JSON 배열 텍스트를 파싱해
@@ -3970,6 +3996,7 @@
                     day.outputBlocks.push(...parsed);
                     saveSpeakingDays();
                     renderOutputManageList();
+                    populateSpeakingDaySelectors();
                     await showAlert(`'${getActiveSpeakingDay().name}'에 OUTPUT 블록 ${parsed.length}개를 추가했습니다.`);
                 } catch(err) {
                     await showAlert("파일을 읽는 중 오류가 발생했습니다: " + err.message);
