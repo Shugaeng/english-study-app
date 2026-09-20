@@ -1042,7 +1042,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.26.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.27.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2525,8 +2525,9 @@
             const clean = [];
             raw.forEach(tok => {
                 // 아이폰 등에서 자동으로 곡선형 어퍼스트로피(’)로 바뀌는 경우가 있어, 채점 전에
-                // 직선형(')으로 통일해줌 — 안 그러면 didn't(곡선)와 didn't(직선)가 다른 단어로 처리됨
-                const c = tok.toLowerCase().replace(/[‘’ʼ`´]/g, "'").replace(/[^a-z0-9']/g, '');
+                // 직선형(')으로 통일해줌 — 안 그러면 didn't(곡선)와 didn't(직선)가 다른 단어로 처리됨.
+                // 한글 음절(가-힣)도 허용해서, OUTPUT STEP2의 한글 해석 입력 채점에도 이 함수를 그대로 씀
+                const c = tok.toLowerCase().replace(/[‘’ʼ`´]/g, "'").replace(/[^a-z0-9'가-힣]/g, '');
                 if(c) { display.push(tok); clean.push(c); }
             });
             return { display, clean };
@@ -4149,9 +4150,9 @@
             const subText = document.getElementById("output-sub-text");
             document.getElementById("output-result-area").classList.add("hidden");
 
-            // STEP1(듣기)/STEP2(문장 말하기)만 이전/다음 문장 이동, STEP2/STEP4만 마이크·직접입력 노출
+            // STEP1(듣기)/STEP2(문장 말하기)만 이전/다음 문장 이동, STEP3(듣기 전용)만 마이크·직접입력 없음
             const showNav = (outputStep === 1 || outputStep === 2);
-            const showMicWrite = (outputStep === 2 || outputStep === 4);
+            const showMicWrite = (outputStep === 1 || outputStep === 2 || outputStep === 4);
             const showSub = (outputStep === 3);
 
             prevBtn.classList.toggle("invisible", !showNav);
@@ -4212,14 +4213,21 @@
 
             const writeInputEl = document.getElementById("output-write-input");
             if(showMicWrite) {
-                // STEP2는 위에 보이는 영어 문장을 그대로, STEP4는 우리말을 보고 떠올린 영어를 입력하는 것이므로 힌트도 그에 맞게
-                document.getElementById("output-write-ko-hint").textContent = outputStep === 2 ? target.en : target.ko;
-                writeInputEl.placeholder = outputStep === 2 ? "위 문장을 보고 따라 입력해보세요..." : "한글 해석을 보고 영어로 입력해보세요...";
+                // STEP1/STEP4는 우리말을 보고 떠올린 영어를 입력하는 것이라 힌트도 우리말,
+                // STEP2는 위에 보이는 영어 문장의 뜻(한글)을 입력하는 것이라 힌트는 영어 문장 그대로
+                const hintMessages = { 1: target.ko, 2: target.en, 4: target.ko };
+                document.getElementById("output-write-ko-hint").textContent = hintMessages[outputStep] || "";
+                const writePlaceholders = {
+                    1: "한글 문장을 보고 영어로 입력해보세요...",
+                    2: "위 영어 문장의 뜻을 한글로 입력해보세요...",
+                    4: "한글 해석을 보고 영어로 입력해보세요..."
+                };
+                writeInputEl.placeholder = writePlaceholders[outputStep] || "";
             }
 
             const statusMessages = {
-                1: "듣기 버튼을 눌러 원어민 발음을 들어보세요",
-                2: "영어 문장을 보고 따라 말하거나, 아래에 직접 입력해서 연습해보세요",
+                1: "듣기 버튼으로 발음을 확인하고, 마이크나 직접 입력으로 영어를 연습해보세요",
+                2: "영어 문장을 보고 따라 말하거나, 아래에 뜻을 한글로 입력해보세요",
                 3: "듣기 버튼을 눌러 문단을 들으며 소리 내어 따라 말해보세요",
                 4: "우리말을 보고 2분 안에 영어 문단을 통째로 말해보세요"
             };
@@ -4232,7 +4240,8 @@
             if(!target) return;
             const typed = document.getElementById("output-write-input").value.trim();
             if(!typed) {
-                await showAlert(outputStep === 2 ? "영어 문장을 입력해주세요." : "영어 문단을 입력해주세요.");
+                const emptyMessages = { 1: "영어 문장을 입력해주세요.", 2: "한글 해석을 입력해주세요.", 4: "영어 문단을 입력해주세요." };
+                await showAlert(emptyMessages[outputStep] || "내용을 입력해주세요.");
                 return;
             }
             stopOutputRecognition();
@@ -4301,8 +4310,12 @@
             source = source || 'voice';
             const target = getCurrentOutputTarget();
             if(!target) return;
-            const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(target.en, transcript);
-            const unit = outputStep === 2 ? '문장' : '문단';
+            // 마이크(말하기)는 항상 영어로 채점 — STEP2의 직접 입력만 예외적으로 한글 해석을
+            // 확인하는 용도라 우리말(target.ko) 기준으로 채점하고, 나머지 직접 입력은 영어 기준
+            const isKoreanCheck = (outputStep === 2 && source === 'typed');
+            const targetText = isKoreanCheck ? target.ko : target.en;
+            const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(targetText, transcript);
+            const unit = outputStep === 4 ? '문단' : (isKoreanCheck ? '해석' : '문장');
 
             document.getElementById("output-status-text").textContent = source === 'typed'
                 ? "채점이 완료됐어요. 결과를 확인해보세요."
@@ -4319,10 +4332,16 @@
                 `<span class="${matched[idx] ? 'speak-word-correct' : 'speak-word-wrong'}">${escapeHtml(w)}</span>`
             ).join(' ');
 
-            renderOutputWrongWords(targetDisplay, matched);
+            // 한글 해석 확인(STEP2 직접 입력)은 원어민 발음(영어 TTS)을 들려주는 게 의미가 없어서
+            // 틀린 단어 탭-재생 목록은 생략함
+            if(isKoreanCheck) {
+                document.getElementById("output-wrong-words-wrap").classList.add("hidden");
+            } else {
+                renderOutputWrongWords(targetDisplay, matched);
+            }
             renderOutputVocab();
 
-            const scoreLabel = source === 'typed' ? '타이핑 정확도' : '스피킹 정확도';
+            const scoreLabel = source === 'typed' ? (isKoreanCheck ? '해석 정확도' : '타이핑 정확도') : '스피킹 정확도';
             document.getElementById("output-score-badge").textContent = `${scoreLabel} ${percent}점 · ${outputScoreMessage(percent)}`;
             document.getElementById("output-result-area").classList.remove("hidden");
         }
