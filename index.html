@@ -51,6 +51,7 @@
         .speak-word-extra { background: #FEF3C7; color: #B45309; border-radius: 4px; padding: 0 3px; text-decoration: line-through; text-decoration-color: #B45309; }
         .speak-sentence-clickable { cursor: pointer; border-radius: 6px; padding: 2px 3px; transition: background-color 0.15s; }
         .output-chunk-divider { color: #8B95A1; margin: 0 0.3em; font-weight: 700; }
+        .output-blank { display: inline-block; min-width: 3.2em; border-bottom: 2px solid #8B95A1; margin: 0 0.2em; vertical-align: middle; }
         .speak-sentence-clickable:hover, .speak-sentence-clickable:active { background-color: rgba(91, 92, 240, 0.12); }
         #speak-mic-btn.recording, #lyrics-mic-btn.recording { animation: speak-pulse 1.2s ease-in-out infinite; background-color: #EA4335 !important; }
         @keyframes speak-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(234,67,53,0.4); } 50% { box-shadow: 0 0 0 14px rgba(234,67,53,0); } }
@@ -1042,7 +1043,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.27.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.28.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1155,6 +1156,26 @@
                     html += `<strong class="text-primary">${escapeHtml(match[1])}</strong>`;
                 } else {
                     html += `<span class="output-chunk-divider">∗</span>`;
+                }
+                lastIndex = regex.lastIndex;
+            }
+            html += escapeHtml(text.slice(lastIndex));
+            return html;
+        }
+
+        // STEP3(들으면서 따라 말하기)의 교재처럼, "**표현**"으로 표시된 핵심 패턴 부분만
+        // 빈칸으로 가리고 나머지는 그대로 보여줌(끊어 읽기 "*" 표시는 STEP3에는 없으므로 제거).
+        // pattern이 없는 문장은 빈칸 없이 en 그대로 보여줌
+        function renderBlankedHtml(text) {
+            if(!text) return '';
+            let html = '';
+            let lastIndex = 0;
+            const regex = /\*\*(.+?)\*\*|\*/g;
+            let match;
+            while((match = regex.exec(text)) !== null) {
+                html += escapeHtml(text.slice(lastIndex, match.index));
+                if(match[1] !== undefined) {
+                    html += `<span class="output-blank"></span>`;
                 }
                 lastIndex = regex.lastIndex;
             }
@@ -4205,7 +4226,11 @@
                 const sentence = getOutputPool()[outputSentenceIndex];
                 mainText.innerHTML = renderPatternHtml((sentence && sentence.pattern) || target.en);
             } else if(outputStep === 3) {
-                mainText.textContent = target.en;
+                // STEP3는 교재처럼 "**패턴**"으로 표시된 핵심 부분만 빈칸으로 가려서 보여줌
+                // (pattern이 없는 문장은 빈칸 없이 en 그대로) — 듣기 버튼 음성은 항상 전체 문장
+                const block = getCurrentOutputBlock();
+                const blankSource = block.sentences.map(s => s.pattern || s.en).join(' ');
+                mainText.innerHTML = renderBlankedHtml(blankSource);
                 subText.textContent = target.ko; // STEP3만 참고용으로 우리말 보조 텍스트 추가 표시
             } else {
                 mainText.textContent = target.ko;
