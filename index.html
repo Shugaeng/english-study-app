@@ -918,6 +918,7 @@
         const STORAGE_KEY_SPEAKING_DAYS = "english_study_speaking_days_v4";
         const STORAGE_KEY_ACTIVE_SPEAKING_DAY = "english_study_active_speaking_day_v4";
         const STORAGE_KEY_SPEAK_PROGRESS = "english_study_speak_progress_v1"; // 이어서 학습하기 — 마지막으로 보던 에피소드/문장/모드 (이 기기 전용, 클라우드 동기화 대상 아님)
+        const STORAGE_KEY_OUTPUT_PROGRESS = "english_study_output_progress_v1"; // 이어서 학습하기(OUTPUT) — 마지막으로 보던 블록/STEP/문장 (이 기기 전용, 클라우드 동기화 대상 아님)
         const STORAGE_KEY_SPEAK_STATS = "english_study_speak_stats_v1"; // 말하기 채점(스피킹+타이핑) 누적 평균 점수
         const STORAGE_KEY_SPEAK_EPISODE_STATS = "english_study_speak_episode_stats_v1"; // 에피소드별 누적 평균 점수 (에피소드 id로 구분)
         const STORAGE_KEY_LYRICS_SONGS = "english_study_lyrics_songs_v1";
@@ -969,7 +970,7 @@
         const _originalLocalStorageSetItem = localStorage.setItem.bind(localStorage);
         localStorage.setItem = function(key, value) {
             _originalLocalStorageSetItem(key, value);
-            if(appInitialized && !applyingRemoteData && key.startsWith("english_study_") && key !== STORAGE_KEY_LOCAL_UPDATED_AT && key !== STORAGE_KEY_SPEAK_PROGRESS && key !== STORAGE_KEY_LYRICS_PROGRESS) {
+            if(appInitialized && !applyingRemoteData && key.startsWith("english_study_") && key !== STORAGE_KEY_LOCAL_UPDATED_AT && key !== STORAGE_KEY_SPEAK_PROGRESS && key !== STORAGE_KEY_LYRICS_PROGRESS && key !== STORAGE_KEY_OUTPUT_PROGRESS) {
                 setLocalUpdatedAt(Date.now());
                 scheduleCloudPush();
             }
@@ -1052,12 +1053,12 @@
         // 디바운스 대기 없이 바로 실행함 — 안 그러면(특히 모바일에서 저장 직후 바로 앱을
         // 나갈 때) 타이머가 실행되기 전에 페이지가 정지/종료되어 변경 사항이 누락될 수 있음
         document.addEventListener("visibilitychange", () => {
-            if(document.visibilityState === "hidden") { flushCloudPush(); flushSpeakDraftSave(); }
+            if(document.visibilityState === "hidden") { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); }
         });
-        window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); });
+        window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.29.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.29.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1639,6 +1640,7 @@
             outputStep = 1;
             outputSentenceIndex = 0;
             outputDraftText = "";
+            saveOutputProgress();
             populateSpeakingDaySelectors();
 
             const activePanel = document.querySelector('.panel.active');
@@ -2139,6 +2141,31 @@
             }));
         }
 
+        // OUTPUT용 이어서 학습하기 — 말하기 탭 밖으로 나갔다 오거나(다른 탭, 앱 재실행)
+        // 다시 Output 화면에 들어와도 마지막으로 보던 블록/STEP/문장과 입력 중이던 텍스트를
+        // 그대로 이어서 보여줌. activeSpeakingDayId가 저장 당시와 같을 때만 적용
+        (function restoreOutputProgress() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_OUTPUT_PROGRESS) || "null");
+                if(saved && saved.dayId === activeSpeakingDayId) {
+                    outputBlockIndex = Number.isInteger(saved.blockIndex) ? saved.blockIndex : 0;
+                    outputStep = [1, 2, 3, 4].includes(saved.step) ? saved.step : 1;
+                    outputSentenceIndex = Number.isInteger(saved.sentenceIndex) ? saved.sentenceIndex : 0;
+                    outputDraftText = typeof saved.draftText === 'string' ? saved.draftText : "";
+                }
+            } catch(err) { /* 저장된 값이 깨졌으면 기본값으로 시작 */ }
+        })();
+
+        function saveOutputProgress() {
+            localStorage.setItem(STORAGE_KEY_OUTPUT_PROGRESS, JSON.stringify({
+                dayId: activeSpeakingDayId,
+                blockIndex: outputBlockIndex,
+                step: outputStep,
+                sentenceIndex: outputSentenceIndex,
+                draftText: outputDraftText
+            }));
+        }
+
         // 말하기 평균 점수 — 스피킹/타이핑 채점을 할 때마다 누적(횟수, 점수 합계)해서
         // "지금까지 전체 누적 평균 정확도"를 계산함 (음성/타이핑 구분 없이 전부 합산)
         let speakStats = (function() {
@@ -2303,11 +2330,13 @@
         }
 
         function enterSpeakingOutput() {
+            // 다른 탭에 다녀오거나 앱을 재실행해도 마지막으로 보던 블록/STEP/문장과 입력
+            // 중이던 텍스트를 그대로 이어서 보여줌 (범위를 벗어난 경우에만 안전하게 보정)
             const blocks = getOutputBlocks();
             if(outputBlockIndex >= blocks.length || outputBlockIndex < 0) outputBlockIndex = 0;
-            outputStep = 1; // Output 화면에 들어올 때는 항상 STEP1부터 (교재 순서 그대로)
-            outputSentenceIndex = 0;
-            outputDraftText = "";
+            if(![1, 2, 3, 4].includes(outputStep)) outputStep = 1;
+            const pool = getOutputPool();
+            if(outputSentenceIndex >= pool.length || outputSentenceIndex < 0) outputSentenceIndex = 0;
             showSpeakingView('output');
             renderOutputBlockChips();
             renderOutputStepTabs();
@@ -3311,6 +3340,7 @@
                 outputStep = 1;
                 outputSentenceIndex = 0;
                 outputDraftText = "";
+                saveOutputProgress();
             }
             if(data.lyricsSongs && Array.isArray(data.lyricsSongs)) {
                 lyricsSongs = data.lyricsSongs;
@@ -4124,6 +4154,7 @@
             outputStep = 1; // 블록을 바꾸면 그 블록의 STEP1부터 다시 시작
             outputSentenceIndex = 0;
             outputDraftText = "";
+            saveOutputProgress();
             renderOutputBlockChips();
             renderOutputStepTabs();
             renderOutputStep();
@@ -4156,6 +4187,7 @@
             outputStep = step;
             outputSentenceIndex = 0; // 스텝을 바꾸면 그 블록의 첫 문장부터
             outputDraftText = "";
+            saveOutputProgress();
             document.getElementById("output-result-area").classList.add("hidden");
             renderOutputStepTabs();
             renderOutputStep();
@@ -4194,6 +4226,7 @@
             if(pool.length === 0) return;
             outputSentenceIndex = (outputSentenceIndex + delta + pool.length) % pool.length;
             outputDraftText = "";
+            saveOutputProgress();
             document.getElementById("output-result-area").classList.add("hidden");
             renderOutputStep();
         }
@@ -4313,8 +4346,19 @@
             handleOutputResult(typed, 'typed');
         });
 
+        // 이어서 학습하기 — 아직 채점하지 않고 입력 중인 텍스트도 잠시 후 저장해둬서,
+        // 다른 탭에 다녀오거나 앱을 껐다 켜도 쓰던 내용이 그대로 남아있게 함
+        let outputDraftSaveTimer = null;
+        function flushOutputDraftSave() {
+            if(!outputDraftSaveTimer) return;
+            clearTimeout(outputDraftSaveTimer);
+            outputDraftSaveTimer = null;
+            saveOutputProgress();
+        }
         document.getElementById("output-write-input").addEventListener("input", (e) => {
             outputDraftText = e.target.value;
+            clearTimeout(outputDraftSaveTimer);
+            outputDraftSaveTimer = setTimeout(flushOutputDraftSave, 400);
         });
         document.getElementById("output-write-input").addEventListener("focus", () => {
             setTimeout(() => {
@@ -4432,6 +4476,7 @@
             stopOutputSynthesis();
             document.getElementById("output-write-input").value = "";
             outputDraftText = "";
+            saveOutputProgress();
             document.getElementById("output-result-area").classList.add("hidden");
             document.getElementById("output-main-text").scrollIntoView({ block: "center", behavior: "smooth" });
         });
