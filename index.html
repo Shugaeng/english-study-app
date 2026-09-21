@@ -1069,7 +1069,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.30.2"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.30.3"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2839,12 +2839,19 @@
                 };
                 speakRecognition.onend = () => {
                     if(!speakStopRequested && !speakFatalErrorMsg) {
-                        // 사용자가 끈 게 아니라 엔진이 스스로 멈춘 것 — 지금까지 인식된 내용은 남겨두고 바로 이어서 재시작
+                        // 사용자가 끈 게 아니라 엔진이 스스로 멈춘 것 — 지금까지 인식된 내용은 남겨두고 바로 이어서 재시작.
+                        // 재시작 사이 공백이 길수록 그 틈에 말한 단어를 놓쳐서(특히 에피소드 전체처럼 문장 사이
+                        // 잠깐씩 쉬는 구간이 많을 때) 인식률이 떨어지므로, 지연 없이 바로 재시작을 먼저 시도하고
+                        // 그게 실패할 때만(엔진이 아직 정리 중일 때) 아주 짧게 기다렸다 재시도함
                         speakAccumulatedTranscript = speakLastTranscript;
-                        setTimeout(() => {
-                            if(speakStopRequested) return; // 재시작 대기 중에 사용자가 멈췄으면 그대로 종료
-                            try { speakRecognition.start(); } catch(err) { finishSpeakingRecognition(); }
-                        }, 250);
+                        try {
+                            speakRecognition.start();
+                        } catch(err) {
+                            setTimeout(() => {
+                                if(speakStopRequested) return; // 재시작 대기 중에 사용자가 멈췄으면 그대로 종료
+                                try { speakRecognition.start(); } catch(err2) { finishSpeakingRecognition(); }
+                            }, 80);
+                        }
                         return;
                     }
                     finishSpeakingRecognition();
@@ -3152,12 +3159,18 @@
                 };
                 lyricsRecognition.onend = () => {
                     if(!lyricsStopRequested && !lyricsFatalErrorMsg) {
-                        // 사용자가 끈 게 아니라 엔진이 스스로 멈춘 것 — 지금까지 인식된 내용은 남겨두고 바로 이어서 재시작
+                        // 사용자가 끈 게 아니라 엔진이 스스로 멈춘 것 — 지금까지 인식된 내용은 남겨두고 바로 이어서 재시작.
+                        // 재시작 공백이 길수록 그 틈에 부른 가사를 놓치므로, 지연 없이 바로 재시작을 먼저
+                        // 시도하고 실패할 때만(엔진이 아직 정리 중일 때) 아주 짧게 기다렸다 재시도함
                         lyricsAccumulatedTranscript = lyricsLastTranscript;
-                        setTimeout(() => {
-                            if(lyricsStopRequested) return; // 재시작 대기 중에 사용자가 멈췄으면 그대로 종료
-                            try { lyricsRecognition.start(); } catch(err) { finishLyricsRecognition(); }
-                        }, 250);
+                        try {
+                            lyricsRecognition.start();
+                        } catch(err) {
+                            setTimeout(() => {
+                                if(lyricsStopRequested) return; // 재시작 대기 중에 사용자가 멈췄으면 그대로 종료
+                                try { lyricsRecognition.start(); } catch(err2) { finishLyricsRecognition(); }
+                            }, 80);
+                        }
                         return;
                     }
                     finishLyricsRecognition();
@@ -4631,12 +4644,19 @@
                 };
                 outputRecognition.onend = () => {
                     if(!outputStopRequested && !outputFatalErrorMsg) {
-                        // 사용자가 끈 게 아니라 엔진이 스스로 멈춘 것 — 지금까지 인식된 내용은 남겨두고 바로 이어서 재시작
+                        // 사용자가 끈 게 아니라 엔진이 스스로 멈춘 것 — 지금까지 인식된 내용은 남겨두고 바로 이어서 재시작.
+                        // 재시작 사이 공백이 길수록 그 틈에 말한 단어를 놓쳐서(특히 에피소드 전체처럼 문장 사이
+                        // 잠깐씩 쉬는 구간이 많을 때) 인식률이 떨어지므로, 지연 없이 바로 재시작을 먼저 시도하고
+                        // 그게 실패할 때만(엔진이 아직 정리 중일 때) 아주 짧게 기다렸다 재시도함
                         outputAccumulatedTranscript = outputLastTranscript;
-                        setTimeout(() => {
-                            if(outputStopRequested) return; // 재시작 대기 중에 사용자가 멈췄으면 그대로 종료
-                            try { outputRecognition.start(); } catch(err) { finishOutputRecognition(); }
-                        }, 250);
+                        try {
+                            outputRecognition.start();
+                        } catch(err) {
+                            setTimeout(() => {
+                                if(outputStopRequested) return; // 재시작 대기 중에 사용자가 멈췄으면 그대로 종료
+                                try { outputRecognition.start(); } catch(err2) { finishOutputRecognition(); }
+                            }, 80);
+                        }
                         return;
                     }
                     finishOutputRecognition();
