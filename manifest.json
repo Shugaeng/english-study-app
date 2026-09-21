@@ -1,0 +1,15 @@
+{
+  "name": "영어 단어/독해 학습",
+  "short_name": "영어학습",
+  "description": "단어, 독해, 말하기, 가사 암기를 한 곳에서 연습하는 영어 학습 앱",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3F4F6",
+  "theme_color": "#5B5CF0",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
