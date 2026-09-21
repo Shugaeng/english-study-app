@@ -1069,7 +1069,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.30.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.30.2"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -2778,14 +2778,33 @@
         let speakRecognition = null;
         let isSpeakingRecording = false;
         let speakLastTranscript = '';
+        let speakAccumulatedTranscript = ''; // 안드로이드 등에서 엔진이 조용해지면 스스로 끊어버릴 때, 재시작 전까지 인식된 내용을 보존
+        let speakStopRequested = false; // 사용자가 마이크를 눌러 직접 끈 것인지 구분(true면 진짜 종료, false면 엔진이 멋대로 끊은 것이라 다시 시작함)
+        let speakFatalErrorMsg = null; // 권한 거부 등 재시도해도 소용없는 오류 메시지(있으면 재시작하지 않고 바로 종료)
 
         function stopSpeakingRecognition() {
             if(speakRecognition && isSpeakingRecording) {
+                speakStopRequested = true;
                 try { speakRecognition.stop(); } catch(err) {}
             }
             isSpeakingRecording = false;
             const micBtn = document.getElementById("speak-mic-btn");
             if(micBtn) micBtn.classList.remove("recording");
+        }
+
+        // 엔진 재시작 없이 진짜로 인식을 종료(사용자가 직접 껐거나, 재시도해도 소용없는 오류가 난 경우)
+        function finishSpeakingRecognition() {
+            isSpeakingRecording = false;
+            document.getElementById("speak-mic-btn").classList.remove("recording");
+            if(speakFatalErrorMsg) {
+                document.getElementById("speak-status-text").textContent = speakFatalErrorMsg;
+            } else if(speakLastTranscript) {
+                handleSpeakingResult(speakLastTranscript);
+            }
+            speakLastTranscript = '';
+            speakAccumulatedTranscript = '';
+            speakStopRequested = false;
+            speakFatalErrorMsg = null;
         }
 
         document.getElementById("speak-mic-btn").addEventListener("click", async () => {
@@ -2806,31 +2825,37 @@
                 speakRecognition.onresult = (e) => {
                     let transcript = '';
                     for(let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript + ' ';
-                    speakLastTranscript = transcript.trim();
+                    speakLastTranscript = (speakAccumulatedTranscript + ' ' + transcript).trim();
                 };
+                // 안드로이드 등 일부 환경은 잠깐만 조용해도 'no-speech' 에러 후 바로 종료시켜버림 —
+                // 이런 일시적 오류는 치명적이지 않으므로 여기서는 상태만 기록하고, 실제 재시작 여부는
+                // onend에서 한 번에 판단함 (계속 듣게 하려면 사용자가 직접 끈 게 아닌 이상 다시 시작)
                 speakRecognition.onerror = (e) => {
-                    isSpeakingRecording = false;
-                    document.getElementById("speak-mic-btn").classList.remove("recording");
-                    if(e.error === 'no-speech') {
-                        document.getElementById("speak-status-text").textContent = "목소리를 못 들었어요. 마이크를 다시 눌러 말해보세요.";
-                    } else if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-                        document.getElementById("speak-status-text").textContent = "마이크 권한을 허용해야 사용할 수 있어요.";
-                    } else {
-                        document.getElementById("speak-status-text").textContent = "음성 인식 중 오류가 발생했어요. 다시 시도해주세요.";
+                    if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                        speakFatalErrorMsg = "마이크 권한을 허용해야 사용할 수 있어요.";
+                    } else if(e.error !== 'no-speech' && e.error !== 'aborted') {
+                        speakFatalErrorMsg = "음성 인식 중 오류가 발생했어요. 다시 시도해주세요.";
                     }
                 };
                 speakRecognition.onend = () => {
-                    isSpeakingRecording = false;
-                    document.getElementById("speak-mic-btn").classList.remove("recording");
-                    if(speakLastTranscript) {
-                        handleSpeakingResult(speakLastTranscript);
-                        speakLastTranscript = '';
+                    if(!speakStopRequested && !speakFatalErrorMsg) {
+                        // 사용자가 끈 게 아니라 엔진이 스스로 멈춘 것 — 지금까지 인식된 내용은 남겨두고 바로 이어서 재시작
+                        speakAccumulatedTranscript = speakLastTranscript;
+                        setTimeout(() => {
+                            if(speakStopRequested) return; // 재시작 대기 중에 사용자가 멈췄으면 그대로 종료
+                            try { speakRecognition.start(); } catch(err) { finishSpeakingRecognition(); }
+                        }, 250);
+                        return;
                     }
+                    finishSpeakingRecognition();
                 };
             }
 
             speakRecognition.continuous = true; // 말이 잠깐 끊겨도 자동으로 꺼지지 않고, 마이크를 다시 눌러야 종료됨
             speakLastTranscript = '';
+            speakAccumulatedTranscript = '';
+            speakStopRequested = false;
+            speakFatalErrorMsg = null;
             document.getElementById("speak-result-area").classList.add("hidden");
             document.getElementById("speak-status-text").textContent = "듣고 있어요... 🎤 (다 말하면 마이크를 다시 눌러 종료)";
             isSpeakingRecording = true;
@@ -3067,14 +3092,33 @@
         let lyricsRecognition = null;
         let isLyricsRecording = false;
         let lyricsLastTranscript = '';
+        let lyricsAccumulatedTranscript = ''; // 엔진이 스스로 끊어버릴 때, 재시작 전까지 인식된 내용을 보존
+        let lyricsStopRequested = false; // 사용자가 직접 끈 것인지 구분(true면 진짜 종료, false면 엔진이 멋대로 끊은 것이라 다시 시작함)
+        let lyricsFatalErrorMsg = null; // 재시도해도 소용없는 오류 메시지(있으면 재시작하지 않고 바로 종료)
 
         function stopLyricsRecognition() {
             if(lyricsRecognition && isLyricsRecording) {
+                lyricsStopRequested = true;
                 try { lyricsRecognition.stop(); } catch(err) {}
             }
             isLyricsRecording = false;
             const micBtn = document.getElementById("lyrics-mic-btn");
             if(micBtn) micBtn.classList.remove("recording");
+        }
+
+        // 엔진 재시작 없이 진짜로 인식을 종료(사용자가 직접 껐거나, 재시도해도 소용없는 오류가 난 경우)
+        function finishLyricsRecognition() {
+            isLyricsRecording = false;
+            document.getElementById("lyrics-mic-btn").classList.remove("recording");
+            if(lyricsFatalErrorMsg) {
+                document.getElementById("lyrics-status-text").textContent = lyricsFatalErrorMsg;
+            } else if(lyricsLastTranscript) {
+                handleLyricsResult(lyricsLastTranscript, 'voice');
+            }
+            lyricsLastTranscript = '';
+            lyricsAccumulatedTranscript = '';
+            lyricsStopRequested = false;
+            lyricsFatalErrorMsg = null;
         }
 
         document.getElementById("lyrics-mic-btn").addEventListener("click", async () => {
@@ -3095,31 +3139,36 @@
                 lyricsRecognition.onresult = (e) => {
                     let transcript = '';
                     for(let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript + ' ';
-                    lyricsLastTranscript = transcript.trim();
+                    lyricsLastTranscript = (lyricsAccumulatedTranscript + ' ' + transcript).trim();
                 };
+                // 일시적 오류(no-speech/aborted)는 치명적이지 않으므로 상태만 기록하고,
+                // 실제 재시작 여부는 onend에서 한 번에 판단함
                 lyricsRecognition.onerror = (e) => {
-                    isLyricsRecording = false;
-                    document.getElementById("lyrics-mic-btn").classList.remove("recording");
-                    if(e.error === 'no-speech') {
-                        document.getElementById("lyrics-status-text").textContent = "목소리를 못 들었어요. 마이크를 다시 눌러 불러보세요.";
-                    } else if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-                        document.getElementById("lyrics-status-text").textContent = "마이크 권한을 허용해야 사용할 수 있어요.";
-                    } else {
-                        document.getElementById("lyrics-status-text").textContent = "음성 인식 중 오류가 발생했어요. 다시 시도해주세요.";
+                    if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                        lyricsFatalErrorMsg = "마이크 권한을 허용해야 사용할 수 있어요.";
+                    } else if(e.error !== 'no-speech' && e.error !== 'aborted') {
+                        lyricsFatalErrorMsg = "음성 인식 중 오류가 발생했어요. 다시 시도해주세요.";
                     }
                 };
                 lyricsRecognition.onend = () => {
-                    isLyricsRecording = false;
-                    document.getElementById("lyrics-mic-btn").classList.remove("recording");
-                    if(lyricsLastTranscript) {
-                        handleLyricsResult(lyricsLastTranscript, 'voice');
-                        lyricsLastTranscript = '';
+                    if(!lyricsStopRequested && !lyricsFatalErrorMsg) {
+                        // 사용자가 끈 게 아니라 엔진이 스스로 멈춘 것 — 지금까지 인식된 내용은 남겨두고 바로 이어서 재시작
+                        lyricsAccumulatedTranscript = lyricsLastTranscript;
+                        setTimeout(() => {
+                            if(lyricsStopRequested) return; // 재시작 대기 중에 사용자가 멈췄으면 그대로 종료
+                            try { lyricsRecognition.start(); } catch(err) { finishLyricsRecognition(); }
+                        }, 250);
+                        return;
                     }
+                    finishLyricsRecognition();
                 };
             }
 
             lyricsRecognition.continuous = true; // 노래가 잠깐 끊겨도 자동으로 꺼지지 않고, 마이크를 다시 눌러야 종료됨
             lyricsLastTranscript = '';
+            lyricsAccumulatedTranscript = '';
+            lyricsStopRequested = false;
+            lyricsFatalErrorMsg = null;
             document.getElementById("lyrics-result-area").classList.add("hidden");
             document.getElementById("lyrics-status-text").textContent = "듣고 있어요... 🎤 (다 부르면 마이크를 다시 눌러 종료)";
             isLyricsRecording = true;
@@ -4522,14 +4571,33 @@
         let outputRecognition = null;
         let isOutputRecording = false;
         let outputLastTranscript = '';
+        let outputAccumulatedTranscript = ''; // 엔진이 스스로 끊어버릴 때, 재시작 전까지 인식된 내용을 보존
+        let outputStopRequested = false; // 사용자가 직접 끈 것인지 구분(true면 진짜 종료, false면 엔진이 멋대로 끊은 것이라 다시 시작함)
+        let outputFatalErrorMsg = null; // 재시도해도 소용없는 오류 메시지(있으면 재시작하지 않고 바로 종료)
 
         function stopOutputRecognition() {
             if(outputRecognition && isOutputRecording) {
+                outputStopRequested = true;
                 try { outputRecognition.stop(); } catch(err) {}
             }
             isOutputRecording = false;
             const micBtn = document.getElementById("output-mic-btn");
             if(micBtn) micBtn.classList.remove("recording");
+        }
+
+        // 엔진 재시작 없이 진짜로 인식을 종료(사용자가 직접 껐거나, 재시도해도 소용없는 오류가 난 경우)
+        function finishOutputRecognition() {
+            isOutputRecording = false;
+            document.getElementById("output-mic-btn").classList.remove("recording");
+            if(outputFatalErrorMsg) {
+                document.getElementById("output-status-text").textContent = outputFatalErrorMsg;
+            } else if(outputLastTranscript) {
+                handleOutputResult(outputLastTranscript);
+            }
+            outputLastTranscript = '';
+            outputAccumulatedTranscript = '';
+            outputStopRequested = false;
+            outputFatalErrorMsg = null;
         }
 
         document.getElementById("output-mic-btn").addEventListener("click", async () => {
@@ -4550,31 +4618,36 @@
                 outputRecognition.onresult = (e) => {
                     let transcript = '';
                     for(let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript + ' ';
-                    outputLastTranscript = transcript.trim();
+                    outputLastTranscript = (outputAccumulatedTranscript + ' ' + transcript).trim();
                 };
+                // 일시적 오류(no-speech/aborted)는 치명적이지 않으므로 상태만 기록하고,
+                // 실제 재시작 여부는 onend에서 한 번에 판단함
                 outputRecognition.onerror = (e) => {
-                    isOutputRecording = false;
-                    document.getElementById("output-mic-btn").classList.remove("recording");
-                    if(e.error === 'no-speech') {
-                        document.getElementById("output-status-text").textContent = "목소리를 못 들었어요. 마이크를 다시 눌러 말해보세요.";
-                    } else if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-                        document.getElementById("output-status-text").textContent = "마이크 권한을 허용해야 사용할 수 있어요.";
-                    } else {
-                        document.getElementById("output-status-text").textContent = "음성 인식 중 오류가 발생했어요. 다시 시도해주세요.";
+                    if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                        outputFatalErrorMsg = "마이크 권한을 허용해야 사용할 수 있어요.";
+                    } else if(e.error !== 'no-speech' && e.error !== 'aborted') {
+                        outputFatalErrorMsg = "음성 인식 중 오류가 발생했어요. 다시 시도해주세요.";
                     }
                 };
                 outputRecognition.onend = () => {
-                    isOutputRecording = false;
-                    document.getElementById("output-mic-btn").classList.remove("recording");
-                    if(outputLastTranscript) {
-                        handleOutputResult(outputLastTranscript);
-                        outputLastTranscript = '';
+                    if(!outputStopRequested && !outputFatalErrorMsg) {
+                        // 사용자가 끈 게 아니라 엔진이 스스로 멈춘 것 — 지금까지 인식된 내용은 남겨두고 바로 이어서 재시작
+                        outputAccumulatedTranscript = outputLastTranscript;
+                        setTimeout(() => {
+                            if(outputStopRequested) return; // 재시작 대기 중에 사용자가 멈췄으면 그대로 종료
+                            try { outputRecognition.start(); } catch(err) { finishOutputRecognition(); }
+                        }, 250);
+                        return;
                     }
+                    finishOutputRecognition();
                 };
             }
 
             outputRecognition.continuous = true; // 말이 잠깐 끊겨도 자동으로 꺼지지 않고, 마이크를 다시 눌러야 종료됨
             outputLastTranscript = '';
+            outputAccumulatedTranscript = '';
+            outputStopRequested = false;
+            outputFatalErrorMsg = null;
             document.getElementById("output-result-area").classList.add("hidden");
             document.getElementById("output-status-text").textContent = "듣고 있어요... 🎤 (다 말하면 마이크를 다시 눌러 종료)";
             isOutputRecording = true;
