@@ -1069,7 +1069,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.30.3"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.31.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -4184,6 +4184,13 @@
             { step: 4, label: 'STEP4', desc: '2분 동안 영어로 말하기' }
         ];
 
+        // 블록 제목에 "[1분]"/"1분 말하기"처럼 붙은 분 단위 표기를 읽어 STEP4 설명에 그대로 씀
+        // (제목에 분 표기가 없으면 기존처럼 "2분"을 기본값으로 씀)
+        function getOutputBlockMinuteLabel(block) {
+            const match = block && block.title && block.title.match(/(\d+)\s*분/);
+            return match ? `${match[1]}분` : '2분';
+        }
+
         function renderOutputBlockChips() {
             const blocks = getOutputBlocks();
             const emptyEl = document.getElementById("output-block-empty");
@@ -4246,7 +4253,11 @@
                 wrap.appendChild(btn);
             });
             const current = OUTPUT_STEPS.find(s => s.step === outputStep);
-            document.getElementById("output-step-desc").textContent = current ? `${current.label} · ${current.desc}` : "";
+            let desc = current ? current.desc : "";
+            if(current && current.step === 4) {
+                desc = `${getOutputBlockMinuteLabel(getCurrentOutputBlock())} 동안 영어로 말하기`;
+            }
+            document.getElementById("output-step-desc").textContent = current ? `${current.label} · ${desc}` : "";
         }
 
         function changeOutputStep(step) {
@@ -4395,7 +4406,7 @@
                 1: "듣기 버튼으로 발음을 확인하고, 마이크나 직접 입력으로 영어를 연습해보세요",
                 2: "영어 문장을 보고 따라 말하거나, 아래에 뜻을 한글로 입력해보세요",
                 3: "듣기 버튼을 눌러 문단을 들으며 소리 내어 따라 말해보세요",
-                4: "우리말을 보고 2분 안에 영어 문단을 통째로 말해보세요"
+                4: `우리말을 보고 ${getOutputBlockMinuteLabel(getCurrentOutputBlock())} 안에 영어 문단을 통째로 말해보세요`
             };
             document.getElementById("output-status-text").textContent = statusMessages[outputStep];
             updateOutputListenButtonUI();
