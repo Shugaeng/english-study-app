@@ -1,0 +1,4 @@
+# Claude Code 에이전트 스킬 설치 파일(npx skills add 등) — 앱 코드와 무관한 로컬 도구 설정이라 커밋 대상에서 제외
+.agents/
+.claude/
+skills-lock.json
