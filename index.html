@@ -1004,9 +1004,14 @@
         async function pushToCloud() {
             if(!firebaseReady) return;
             try {
+                const ts = getLocalUpdatedAt() || Date.now();
                 const backup = buildBackupObject();
-                backup.updatedAt = getLocalUpdatedAt() || Date.now();
+                backup.updatedAt = ts;
                 await cloudDocRef.set(backup);
+                // 이 기기의 마지막 동기화 시각도 방금 올린 시각으로 맞춰둠 — 안 그러면
+                // (처음 동기화하는 기기처럼) 로컬 시각이 계속 0으로 남아, 다음에 앱을 열 때마다
+                // 클라우드 쪽이 더 최신인지 제대로 비교하지 못하고 매번 다시 덮어쓸 수 있음
+                setLocalUpdatedAt(ts);
             } catch(err) {
                 console.error('클라우드 자동 저장 실패:', err);
             }
@@ -1045,7 +1050,11 @@
         function initCloudAutoSync() {
             if(!firebaseReady) { appInitialized = true; return; }
             cloudDocRef.get().then(async (snap) => {
-                if(getLocalUpdatedAt() === 0) setLocalUpdatedAt(Date.now());
+                // 로컬 동기화 기록이 아예 없는 기기(처음 켜는 폰/PC, 브라우저 데이터를 지운 경우 등)는
+                // getLocalUpdatedAt()이 0이므로, 클라우드에 저장된 값이 있으면(양수) 항상 그보다
+                // "오래된" 것으로 취급되어 pullFromCloudIfNewer가 무조건 클라우드 데이터를 받아옴.
+                // (예전에는 여기서 로컬 시각을 지금 시각으로 먼저 찍어버려서, 방금 편집한 적도 없는
+                // 이 기기의 기본 데이터가 오히려 "최신"으로 오인되어 클라우드를 덮어쓰는 문제가 있었음)
                 if(!snap.exists) {
                     pushToCloud(); // 클라우드에 아무것도 없으면 이 기기 데이터로 최초 생성
                 } else {
@@ -1069,7 +1078,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.31.0"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.31.1"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
