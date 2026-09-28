@@ -1078,7 +1078,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.31.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.31.2"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1130,11 +1130,20 @@
         // ==================================================================
         function uid() { return '_' + Math.random().toString(36).substr(2, 9); }
 
-        // 말하기 에피소드의 전체 문단(ko/en)을 마침표(.!?) 기준으로 문장 단위로 나눔
+        // 말하기 에피소드의 전체 문단(ko/en)을 마침표(.!?) 기준으로 문장 단위로 나눔.
+        // "a.m." "U.S." "Mr." 처럼 문장이 끝난 게 아닌데 마침표가 들어간 축약어는 임시 문자로
+        // 가려뒀다가 나눈 뒤 복원함 — 안 그러면 "7 a.m. 이후..." 같은 문장이 "a.m."에서
+        // 잘못 끊어져서, 같은 단락의 한글/영어 문장 개수가 어긋나고 이후 모든 문장 짝이 밀림
+        const SENTENCE_ABBR_PLACEHOLDER = '\u0000';
+        function protectSentenceAbbreviations(text) {
+            return text
+                .replace(/\b(?:[A-Za-z]\.){2,}/g, m => m.replace(/\./g, SENTENCE_ABBR_PLACEHOLDER)) // a.m., p.m., U.S., e.g., i.e. 등
+                .replace(/\b(Mr|Mrs|Ms|Dr|St|vs|etc)\./g, (m, w) => w + SENTENCE_ABBR_PLACEHOLDER); // Mr., Dr., vs., etc.
+        }
         function splitIntoSentences(text) {
-            return (text || '')
+            return protectSentenceAbbreviations(text || '')
                 .split(/(?<=[.!?])\s+/)
-                .map(s => s.trim())
+                .map(s => s.trim().replace(new RegExp(SENTENCE_ABBR_PLACEHOLDER, 'g'), '.'))
                 .filter(Boolean);
         }
 
