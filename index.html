@@ -277,11 +277,18 @@
                             <p class="text-xs text-textMuted mt-0.5">한글 문장을 보고 영어로 말해보는 기존 말하기 연습</p>
                         </div>
                     </button>
-                    <button id="speak-select-output-btn" class="w-full bg-white border border-divider rounded-2xl p-5 shadow-card text-left active:scale-95 transition-transform flex items-center gap-4">
+                    <button id="speak-select-output-btn" class="w-full bg-white border border-divider rounded-2xl p-5 shadow-card text-left mb-4 active:scale-95 transition-transform flex items-center gap-4">
                         <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-book-open-reader"></i></div>
                         <div>
                             <p class="text-base font-bold text-textDark">Output</p>
                             <p class="text-xs text-textMuted mt-0.5">긴 문단을 통째로 자유롭게 말해보는 연습 (준비 중)</p>
+                        </div>
+                    </button>
+                    <button id="speak-select-ted-btn" class="w-full bg-white border border-divider rounded-2xl p-5 shadow-card text-left active:scale-95 transition-transform flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-closed-captioning"></i></div>
+                        <div>
+                            <p class="text-base font-bold text-textDark">TED 섀도잉</p>
+                            <p class="text-xs text-textMuted mt-0.5">실제 TED 연설 음성을 들으며 따라 말하는 고급 연습</p>
                         </div>
                     </button>
                 </div>
@@ -444,6 +451,91 @@
                         <button id="output-retry-btn" class="w-full bg-textDark text-white font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-rotate-right"></i> 다시 풀기
                         </button>
+                    </div>
+                </div>
+
+                <!-- TED 섀도잉 연습 화면 -->
+                <div id="speak-ted-content" class="px-6 pb-6 hidden">
+                    <button class="text-xs font-bold text-textMuted mb-3 flex items-center gap-1" onclick="showSpeakingView('select')">
+                        <i class="fa-solid fa-chevron-left"></i> Input / Output 선택으로
+                    </button>
+                    <div id="ted-talk-empty" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card text-center text-sm text-textMuted mb-4">
+                        아직 등록된 TED 토크가 없어요.<br>설정 탭에서 토크를 추가해주세요.
+                    </div>
+                    <div id="ted-talk-content" class="hidden">
+                        <select class="ted-talk-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeTedTalk(this.value)"></select>
+
+                        <div class="flex bg-cardGray rounded-xl p-1 mb-4">
+                            <button id="ted-mode-sentence-btn" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">문장별로 말하기</button>
+                            <button id="ted-mode-whole-btn" class="flex-1 py-2 rounded-lg text-xs font-bold transition-colors">전체 섀도잉</button>
+                        </div>
+
+                        <div class="bg-white border border-divider rounded-2xl p-4 shadow-card mb-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[11px] font-bold text-textMuted">🎤 실제 TED 음성 (배속 조절 가능)</span>
+                                <div id="ted-speed-buttons" class="flex gap-1"></div>
+                            </div>
+                            <audio id="ted-audio-player" controls preload="none" class="w-full"></audio>
+                        </div>
+
+                        <div class="bg-white border border-divider rounded-3xl p-6 shadow-card mb-6">
+                            <div class="flex justify-center items-center text-xs text-textMuted font-medium mb-3">
+                                <span id="ted-progress-text">0 / 0</span>
+                            </div>
+                            <p id="ted-main-text" class="text-lg font-bold text-textDark text-center leading-relaxed py-2 whitespace-pre-line"></p>
+
+                            <div id="ted-status-text" class="text-center text-xs text-textMuted min-h-[16px] mb-2"></div>
+
+                            <div id="ted-record-controls" class="flex items-center justify-center gap-6 mt-4">
+                                <button id="ted-prev-btn" class="w-10 h-10 rounded-full bg-cardGray flex items-center justify-center text-textMuted active:scale-95 transition-transform">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <button id="ted-mic-btn" class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl shadow-md shadow-primary/30 active:scale-95 transition-transform">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                                <button id="ted-next-btn" class="w-10 h-10 rounded-full bg-cardGray flex items-center justify-center text-textMuted active:scale-95 transition-transform">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <button id="ted-listen-btn" class="w-full mt-4 bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-volume-high"></i> 정확한 발음으로 듣기 (합성음)
+                            </button>
+
+                            <div class="flex items-center gap-3 my-4">
+                                <div class="flex-1 h-px bg-divider"></div>
+                                <span class="text-[11px] text-textMuted font-medium">또는 직접 입력해서 연습</span>
+                                <div class="flex-1 h-px bg-divider"></div>
+                            </div>
+
+                            <div id="ted-write-area">
+                                <textarea id="ted-write-input" rows="3" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-3 text-sm font-medium text-textDark resize-none" placeholder="들은 내용을 영어로 입력해보세요..."></textarea>
+                                <button id="ted-write-submit-btn" class="w-full mt-3 bg-primary text-white font-bold py-3 rounded-xl shadow-md shadow-primary/30 active:scale-95 transition-transform">채점하기</button>
+                            </div>
+                        </div>
+
+                        <div id="ted-result-area" class="hidden bg-white border border-divider rounded-2xl p-5 shadow-card">
+                            <div class="text-xs font-bold text-textMuted mb-1" id="ted-result-label">내가 말한 내용 <span class="font-normal">(원문에 없는 단어는 노란 취소선)</span></div>
+                            <p id="ted-recognized-text" class="text-sm text-textMuted mb-3"></p>
+                            <div class="text-xs font-bold text-textMuted mb-2">목표 대본 <span class="font-normal">(맞은 단어는 초록 밑줄, 틀린 단어는 빨간 점선)</span></div>
+                            <p id="ted-result-text" class="text-lg leading-relaxed text-textDark mb-4"></p>
+
+                            <div id="ted-wrong-words-wrap" class="hidden mb-4">
+                                <div class="text-xs font-bold text-textMuted mb-2">❌ 틀린 단어만 연습 <span class="font-normal">(탭하면 합성음으로 들려줘요)</span></div>
+                                <div id="ted-wrong-words" class="flex flex-wrap gap-2"></div>
+                            </div>
+
+                            <div id="ted-vocab-wrap" class="hidden mb-4">
+                                <div class="text-xs font-bold text-textMuted mb-2">📌 핵심 표현</div>
+                                <div id="ted-vocab" class="bg-cardGray border border-divider rounded-xl p-3.5 text-sm"></div>
+                            </div>
+
+                            <div id="ted-score-badge" class="text-center bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold py-2.5 rounded-xl mb-3"></div>
+
+                            <button id="ted-retry-btn" class="w-full bg-textDark text-white font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-rotate-right"></i> 다시 풀기
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -676,6 +768,39 @@
                         </div>
                     </div>
 
+                    <!-- TED 섀도잉 자료 관리 -->
+                    <div class="bg-white rounded-2xl border border-divider p-5 shadow-card mb-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-closed-captioning text-primary"></i> TED 섀도잉 자료 관리</h2>
+                        </div>
+                        <p class="text-[11px] text-textMuted mb-3">TED 토크 페이지의 공식 오디오 링크와 영어 대본(+선택적으로 한글 번역)을 등록하면, 말하기 탭에서 실제 TED 음성을 들으며 섀도잉 연습을 할 수 있어요.</p>
+                        <select class="ted-talk-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeTedTalk(this.value)"></select>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <button id="add-ted-talk-btn" class="bg-primary text-white text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">토크 추가</button>
+                            <button id="import-ted-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">가져오기</button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mb-3">
+                            <button id="edit-ted-talk-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">내용 수정</button>
+                            <button id="rename-ted-talk-btn" class="bg-cardGray text-textDark text-xs font-bold py-2.5 rounded-xl border border-divider active:scale-95 transition-transform">이름변경</button>
+                            <button id="delete-ted-talk-btn" class="bg-red-50 text-red-500 text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-transform">삭제</button>
+                        </div>
+                        <input type="file" id="ted-file-input" accept=".json" style="display:none;">
+                        <div class="flex gap-3 text-[11px] text-textMuted mb-3">
+                            <span>대량 업로드 양식:</span>
+                            <button id="download-ted-json-btn" class="underline font-semibold text-primary">JSON</button>
+                        </div>
+
+                        <div id="toggle-ted-list-section" class="flex justify-between items-center cursor-pointer select-none">
+                            <span class="text-xs font-bold text-textDark">토크 목록 (<span id="ted-list-count">0</span>개)</span>
+                            <div class="w-7 h-7 rounded-full bg-cardGray flex items-center justify-center text-textMuted transition-transform duration-300" id="ted-list-toggle-icon" style="transform: rotate(-180deg);">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                        <div id="ted-manage-list-wrap" class="transition-all duration-300 mt-2" style="display:none;">
+                            <div id="ted-manage-list" class="flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+
                     <!-- 학습 기록 초기화 -->
                     <div class="bg-red-50 rounded-2xl border border-red-200 p-5 mb-6">
                         <h2 class="text-sm font-bold text-red-600 mb-2 flex items-center gap-2"><i class="fa-solid fa-rotate-right"></i> 학습 기록 초기화</h2>
@@ -856,6 +981,39 @@
             </div>
         </div>
 
+        <!-- TED 토크 추가/수정 모달 -->
+        <div id="add-ted-modal" class="absolute inset-0 bg-black/40 z-50 flex items-center justify-center p-6" style="display:none;">
+            <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl max-h-[85vh] overflow-y-auto">
+                <h3 class="text-lg font-bold text-textDark mb-4" id="ted-modal-title">새 TED 토크 추가하기</h3>
+                <div class="space-y-3 mb-5">
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">토크 제목</label>
+                        <input type="text" id="new-ted-title-input" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark" placeholder="예: 토크 제목 - 연사 이름">
+                    </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">TED 공식 오디오 링크 (mp3 URL)</label>
+                        <input type="text" id="new-ted-audio-input" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark" placeholder="https://download.ted.com/talks/....mp3">
+                    </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">영어 대본 전체 (마침표 기준으로 자동 분리됨)</label>
+                        <textarea id="new-ted-en-input" rows="8" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="TED 토크 페이지의 Transcript 탭에서 복사한 영어 대본을 붙여넣으세요."></textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">한글 번역 (선택, 있으면 문장별 모드에서 뜻을 함께 보여줘요)</label>
+                        <textarea id="new-ted-ko-input" rows="4" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="영어 대본과 같은 문장 수로, 마침표 기준으로 나눠 붙여넣으세요 (없으면 비워둬도 됨)"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs text-textMuted font-medium block mb-1">핵심 표현/각주 (선택, 한 줄에 하나씩 "표현:뜻")</label>
+                        <textarea id="new-ted-vocab-input" rows="2" class="w-full bg-cardGray border border-divider rounded-xl px-4 py-2.5 text-sm font-semibold text-textDark resize-none" placeholder="예: breakthrough:돌파구&#10;groundbreaking:획기적인"></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="close-ted-modal-btn" class="flex-1 bg-cardGray text-textMuted font-bold py-3 rounded-xl text-sm">취소</button>
+                    <button id="save-new-ted-btn" class="flex-1 bg-primary text-white font-bold py-3 rounded-xl text-sm shadow-md">저장</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 독해 단어 사전 팝업 모달 -->
         <div id="bq-word-modal" class="absolute inset-0 bg-black/40 z-50 flex items-center justify-center p-6" style="display:none;">
             <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
@@ -935,6 +1093,9 @@
         const STORAGE_KEY_LYRICS_SONGS = "english_study_lyrics_songs_v1";
         const STORAGE_KEY_ACTIVE_LYRICS_SONG = "english_study_active_lyrics_song_v1";
         const STORAGE_KEY_LYRICS_PROGRESS = "english_study_lyrics_progress_v1"; // 이어서 학습하기 — 마지막으로 보던 곡/줄 (이 기기 전용, 클라우드 동기화 대상 아님)
+        const STORAGE_KEY_TED_TALKS = "english_study_ted_talks_v1";
+        const STORAGE_KEY_ACTIVE_TED_TALK = "english_study_active_ted_talk_v1";
+        const STORAGE_KEY_TED_PROGRESS = "english_study_ted_progress_v1"; // 이어서 학습하기 — 마지막으로 보던 토크/모드/문장 (이 기기 전용, 클라우드 동기화 대상 아님)
         const STORAGE_KEY_LOCAL_UPDATED_AT = "english_study_local_updated_at_v1"; // 클라우드 자동 동기화용 — 이 기기 데이터가 마지막으로 바뀐 시각
 
         // ==================================================================
@@ -981,7 +1142,7 @@
         const _originalLocalStorageSetItem = localStorage.setItem.bind(localStorage);
         localStorage.setItem = function(key, value) {
             _originalLocalStorageSetItem(key, value);
-            if(appInitialized && !applyingRemoteData && key.startsWith("english_study_") && key !== STORAGE_KEY_LOCAL_UPDATED_AT && key !== STORAGE_KEY_SPEAK_PROGRESS && key !== STORAGE_KEY_LYRICS_PROGRESS && key !== STORAGE_KEY_OUTPUT_PROGRESS) {
+            if(appInitialized && !applyingRemoteData && key.startsWith("english_study_") && key !== STORAGE_KEY_LOCAL_UPDATED_AT && key !== STORAGE_KEY_SPEAK_PROGRESS && key !== STORAGE_KEY_LYRICS_PROGRESS && key !== STORAGE_KEY_OUTPUT_PROGRESS && key !== STORAGE_KEY_TED_PROGRESS) {
                 setLocalUpdatedAt(Date.now());
                 scheduleCloudPush();
             }
@@ -1073,12 +1234,12 @@
         // 디바운스 대기 없이 바로 실행함 — 안 그러면(특히 모바일에서 저장 직후 바로 앱을
         // 나갈 때) 타이머가 실행되기 전에 페이지가 정지/종료되어 변경 사항이 누락될 수 있음
         document.addEventListener("visibilitychange", () => {
-            if(document.visibilityState === "hidden") { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); }
+            if(document.visibilityState === "hidden") { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); flushTedDraftSave(); }
         });
-        window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); });
+        window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); flushTedDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.31.2"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.32.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1430,6 +1591,34 @@
         function saveLyricsSongs() { localStorage.setItem(STORAGE_KEY_LYRICS_SONGS, JSON.stringify(lyricsSongs)); }
         function saveActiveLyricsSongId() { localStorage.setItem(STORAGE_KEY_ACTIVE_LYRICS_SONG, activeLyricsSongId || ''); }
 
+        // TED 섀도잉 자료 — 사용자가 TED 토크 공식 오디오 링크(mp3)와 영어 대본(+선택적
+        // 한글 번역)을 등록하면, 말하기 탭에서 실제 음성을 들으며 섀도잉 연습을 함.
+        // Day 구조 없이 가사(Lyrics)처럼 자유롭게 추가/삭제하는 평평한 목록으로 관리.
+        // en은 반드시 있어야 하고(문장 분리 기준), ko는 선택 — 문장 수가 en과 다르면
+        // 짧은 쪽 기준으로만 짝지어짐(한글 번역 없는 문장은 뜻 없이 영어만 표시됨)
+        function buildTedTalk(title, speaker, audioUrl, enParagraph, koParagraph, vocab) {
+            const enSentences = splitIntoSentences(enParagraph);
+            const koSentences = koParagraph ? splitIntoSentences(koParagraph) : [];
+            return {
+                id: uid(),
+                title: (title || '').trim() || '제목 없는 토크',
+                speaker: (speaker || '').trim(),
+                audioUrl: (audioUrl || '').trim(),
+                sentences: enSentences.map((en, idx) => ({ id: uid(), en, ko: koSentences[idx] || '' })),
+                vocab: Array.isArray(vocab) ? vocab.filter(v => typeof v === 'string' && v.trim()) : [],
+                mismatched: koSentences.length > 0 && koSentences.length !== enSentences.length
+            };
+        }
+
+        let tedTalks = JSON.parse(localStorage.getItem(STORAGE_KEY_TED_TALKS));
+        if(!tedTalks || !Array.isArray(tedTalks)) tedTalks = [];
+        let activeTedTalkId = localStorage.getItem(STORAGE_KEY_ACTIVE_TED_TALK) || (tedTalks[0] ? tedTalks[0].id : null);
+        if(activeTedTalkId && !tedTalks.find(t => t.id === activeTedTalkId)) activeTedTalkId = tedTalks[0] ? tedTalks[0].id : null;
+
+        function getActiveTedTalk() { return tedTalks.find(t => t.id === activeTedTalkId) || null; }
+        function saveTedTalks() { localStorage.setItem(STORAGE_KEY_TED_TALKS, JSON.stringify(tedTalks)); }
+        function saveActiveTedTalkId() { localStorage.setItem(STORAGE_KEY_ACTIVE_TED_TALK, activeTedTalkId || ''); }
+
         // 현황 탭 전용 단어장 선택 — 암기/퀴즈 탭에서 쓰는 활성 단어장과는 별도로,
         // 현황 탭의 통계(마스터 단어/미암기 단어율)를 어떤 단어장 기준으로 볼지 독립적으로 고를 수 있음
         let dashboardWordBookId = localStorage.getItem(STORAGE_KEY_DASH_WORDBOOK) || activeWordBookId;
@@ -1454,6 +1643,7 @@
         let masteredWordSet = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY_MASTERED_WORDS)) || []);
         let isWordListOpen = false; // 단어장 접힘 상태 관리 (기본값: 닫힘)
         let isLyricsListOpen = false; // 가사 관리의 가사 목록 접힘 상태 관리 (기본값: 닫힘)
+        let isTedListOpen = false; // TED 자료 관리의 토크 목록 접힘 상태 관리 (기본값: 닫힘)
 
         function saveStats(data) { localStorage.setItem(STORAGE_KEY_STATS, JSON.stringify(data)); }
         function saveGoals(data) { localStorage.setItem(STORAGE_KEY_GOALS, JSON.stringify(data)); }
@@ -2143,6 +2333,10 @@
         let outputDraftText = ""; // OUTPUT 화면에서 직접 입력 중이던(아직 채점 안 한) 텍스트
         let outputStep = 1; // 교재 구성 그대로: 1=우리말 보면서 듣기, 2=한 문장씩 끊어 말하기, 3=들으면서 따라 말하기, 4=2분 동안 영어로 말하기
         let outputSentenceIndex = 0; // STEP1/STEP2에서 지금 보고 있는 문장 인덱스
+        let tedMode = 'sentence'; // 'sentence' = 한 문장씩, 'whole' = 토크 전체 한 번에
+        let tedSentenceIndex = 0; // 현재 토크 안에서 연습 중인 문장 인덱스
+        let tedDraftText = ""; // 직접 입력 중이던(아직 채점 안 한) 텍스트
+        let editingTedTalkId = null; // 토크 추가/수정 모달이 지금 어느 모드인지 — null이면 새 토크 추가, 값이 있으면 그 토크 수정
 
         // 이어서 학습하기 — 앱을 껐다 켜도(또는 다른 탭에 갔다 와도) 마지막으로 보던
         // 에피소드/문장/모드와, 그때 입력창에 쓰고 있던(아직 채점 안 한) 텍스트까지 그대로
@@ -2192,6 +2386,26 @@
                 step: outputStep,
                 sentenceIndex: outputSentenceIndex,
                 draftText: outputDraftText
+            }));
+        }
+
+        (function restoreTedProgress() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_TED_PROGRESS) || "null");
+                if(saved && saved.talkId === activeTedTalkId) {
+                    tedMode = saved.mode === 'whole' ? 'whole' : 'sentence';
+                    tedSentenceIndex = Number.isInteger(saved.sentenceIndex) ? saved.sentenceIndex : 0;
+                    tedDraftText = typeof saved.draftText === 'string' ? saved.draftText : "";
+                }
+            } catch(err) { /* 저장된 값이 깨졌으면 기본값으로 시작 */ }
+        })();
+
+        function saveTedProgress() {
+            localStorage.setItem(STORAGE_KEY_TED_PROGRESS, JSON.stringify({
+                talkId: activeTedTalkId,
+                mode: tedMode,
+                sentenceIndex: tedSentenceIndex,
+                draftText: tedDraftText
             }));
         }
 
@@ -2330,19 +2544,25 @@
             stopSpeakingSynthesis();
             stopOutputRecognition();
             stopOutputSynthesis();
+            stopTedRecognition();
+            stopTedSynthesis();
+            stopTedAudio();
 
             speakingView = view;
             document.getElementById("speak-view-select").classList.toggle("hidden", view !== 'select');
             document.getElementById("speak-input-content").classList.toggle("hidden", view !== 'input');
             document.getElementById("speak-output-content").classList.toggle("hidden", view !== 'output');
-            document.getElementById("speak-day-select-header").classList.toggle("hidden", view === 'select');
+            document.getElementById("speak-ted-content").classList.toggle("hidden", view !== 'ted');
+            // Day 셀렉트는 Input/Output 화면에서만, TED는 Day 구조가 없어 토크 셀렉트를 그 화면 안에서 따로 씀
+            document.getElementById("speak-day-select-header").classList.toggle("hidden", view !== 'input' && view !== 'output');
             document.getElementById("speak-avg-score-wrap").classList.toggle("hidden", view !== 'input' || speakStats.count === 0);
             refreshSpeakDayHeaderSelect(); // Input/Output 중 어느 화면인지에 맞는 라벨(에피소드 개수 vs 블록 개수)로 갱신
 
             const subtitleEl = document.getElementById("speak-header-subtitle");
             if(view === 'input') subtitleEl.textContent = "한글 문장을 보고 영어로 말해보세요";
             else if(view === 'output') subtitleEl.textContent = "긴 문단을 통째로 자유롭게 말해보세요";
-            else subtitleEl.textContent = "Input과 Output 중 연습할 방식을 골라주세요";
+            else if(view === 'ted') subtitleEl.textContent = "실제 TED 음성을 들으며 따라 말해보세요";
+            else subtitleEl.textContent = "Input / Output / TED 섀도잉 중 연습할 방식을 골라주세요";
         }
 
         function enterSpeakingInput() {
@@ -2371,8 +2591,22 @@
             renderOutputStepTabs();
             renderOutputStep();
         }
+        function enterSpeakingTed() {
+            // 다른 탭에 다녀오거나 앱을 재실행해도 마지막으로 보던 토크/모드/문장과 입력
+            // 중이던 텍스트를 그대로 이어서 보여줌 (범위를 벗어난 경우에만 안전하게 보정)
+            if(activeTedTalkId && !tedTalks.find(t => t.id === activeTedTalkId)) activeTedTalkId = tedTalks[0] ? tedTalks[0].id : null;
+            if(!activeTedTalkId && tedTalks[0]) activeTedTalkId = tedTalks[0].id;
+            if(!['sentence', 'whole'].includes(tedMode)) tedMode = 'sentence';
+            const pool = getActiveTedTalk() ? getActiveTedTalk().sentences : [];
+            if(tedSentenceIndex >= pool.length || tedSentenceIndex < 0) tedSentenceIndex = 0;
+            showSpeakingView('ted');
+            populateTedTalkSelectors();
+            renderTedModeToggle();
+            renderTedStep();
+        }
         document.getElementById("speak-select-input-btn").addEventListener("click", enterSpeakingInput);
         document.getElementById("speak-select-output-btn").addEventListener("click", enterSpeakingOutput);
+        document.getElementById("speak-select-ted-btn").addEventListener("click", enterSpeakingTed);
 
         // 문장별 말하기 / 에피소드 전체 말하기 모드 전환 버튼 UI 갱신
         function renderSpeakModeToggle() {
@@ -2526,6 +2760,174 @@
         }
         document.getElementById("speak-prev-btn").addEventListener("click", () => moveSpeakingSentence(-1));
         document.getElementById("speak-next-btn").addEventListener("click", () => moveSpeakingSentence(1));
+
+        // ==================================================================
+        // TED 섀도잉 — Input/Output과 채점/결과 화면 로직은 동일하게 재사용하되, "듣기"가
+        // 합성음(TTS) 대신 실제 TED 공식 오디오(mp3)라는 점이 다름. 긴 mp3 하나를 문장
+        // 단위로 끊어 재생할 방법이 없어서(타임스탬프 데이터 없음), 문장별/단어별 정확한
+        // 재생은 기존처럼 TTS로 보완하고, 실제 음성은 배속 조절 가능한 플레이어로 전체 재생함
+        // ==================================================================
+        const TED_SPEEDS = [0.75, 0.85, 1, 1.25];
+        let tedPlaybackRate = 1;
+
+        function renderTedSpeedButtons() {
+            const wrap = document.getElementById("ted-speed-buttons");
+            if(!wrap) return;
+            wrap.innerHTML = "";
+            TED_SPEEDS.forEach(speed => {
+                const btn = document.createElement("button");
+                btn.textContent = speed + "x";
+                btn.className = "text-[10px] font-bold px-2 py-1 rounded-full border transition-colors " +
+                    (speed === tedPlaybackRate ? "bg-primary text-white border-primary" : "bg-cardGray text-textMuted border-divider");
+                btn.addEventListener("click", () => {
+                    tedPlaybackRate = speed;
+                    const audio = document.getElementById("ted-audio-player");
+                    if(audio) audio.playbackRate = speed;
+                    renderTedSpeedButtons();
+                });
+                wrap.appendChild(btn);
+            });
+        }
+        renderTedSpeedButtons();
+
+        function stopTedAudio() {
+            const audio = document.getElementById("ted-audio-player");
+            if(audio) audio.pause();
+        }
+
+        // talk이 바뀌었을 때만 src를 새로 설정 — 매 렌더마다 src를 다시 넣으면 재생 중이던
+        // 오디오가 끊기므로, data-talk-id로 지금 로드된 토크인지 확인 후 바뀐 경우에만 교체
+        function renderTedAudioPlayer(talk) {
+            const audio = document.getElementById("ted-audio-player");
+            if(!audio) return;
+            const talkId = talk ? talk.id : '';
+            if(audio.getAttribute('data-talk-id') !== talkId) {
+                audio.pause();
+                audio.src = (talk && talk.audioUrl) ? talk.audioUrl : '';
+                audio.setAttribute('data-talk-id', talkId);
+                audio.playbackRate = tedPlaybackRate;
+            }
+            audio.style.opacity = (talk && talk.audioUrl) ? '1' : '0.4';
+        }
+
+        function renderTedModeToggle() {
+            const sentenceBtn = document.getElementById("ted-mode-sentence-btn");
+            const wholeBtn = document.getElementById("ted-mode-whole-btn");
+            const activeCls = ["bg-white", "text-primary", "shadow-sm"];
+            const inactiveCls = ["text-textMuted"];
+            sentenceBtn.classList.remove(...activeCls, ...inactiveCls);
+            wholeBtn.classList.remove(...activeCls, ...inactiveCls);
+            sentenceBtn.classList.add(...(tedMode === 'sentence' ? activeCls : inactiveCls));
+            wholeBtn.classList.add(...(tedMode === 'whole' ? activeCls : inactiveCls));
+        }
+
+        function changeTedMode(mode) {
+            if(mode === tedMode) return;
+            stopTedRecognition();
+            stopTedSynthesis();
+            tedMode = mode;
+            tedDraftText = "";
+            saveTedProgress();
+            renderTedModeToggle();
+            renderTedStep();
+        }
+        document.getElementById("ted-mode-sentence-btn").addEventListener("click", () => changeTedMode('sentence'));
+        document.getElementById("ted-mode-whole-btn").addEventListener("click", () => changeTedMode('whole'));
+
+        function isWholeTedMode() { return tedMode === 'whole'; }
+
+        function getTedSentences() {
+            const talk = getActiveTedTalk();
+            return talk ? talk.sentences : [];
+        }
+
+        // 지금 연습 대상 — 문장별 모드면 현재 문장 하나, 전체 섀도잉 모드면 토크 전체를
+        // 이어붙인 문단 전체 (마이크로 말하기/직접 입력하기/합성음 발음 듣기가 공통으로 사용)
+        function getCurrentTedTarget() {
+            const talk = getActiveTedTalk();
+            if(!talk || talk.sentences.length === 0) return null;
+            if(isWholeTedMode()) {
+                return {
+                    ko: talk.sentences.map(s => s.ko).filter(Boolean).join(' '),
+                    en: talk.sentences.map(s => s.en).join(' ')
+                };
+            }
+            return getTedSentences()[tedSentenceIndex] || null;
+        }
+
+        function getTargetTedSentenceGroups() {
+            if(isWholeTedMode()) {
+                const talk = getActiveTedTalk();
+                return talk ? talk.sentences : [];
+            }
+            const item = getTedSentences()[tedSentenceIndex];
+            return item ? [item] : [];
+        }
+
+        function renderTedStep() {
+            const talk = getActiveTedTalk();
+            const emptyEl = document.getElementById("ted-talk-empty");
+            const contentEl = document.getElementById("ted-talk-content");
+            const micBtn = document.getElementById("ted-mic-btn");
+            const listenBtn = document.getElementById("ted-listen-btn");
+            const prevBtn = document.getElementById("ted-prev-btn");
+            const nextBtn = document.getElementById("ted-next-btn");
+            const writeInput = document.getElementById("ted-write-input");
+            const writeSubmitBtn = document.getElementById("ted-write-submit-btn");
+            document.getElementById("ted-result-area").classList.add("hidden");
+
+            if(tedTalks.length === 0) {
+                emptyEl.classList.remove("hidden");
+                contentEl.classList.add("hidden");
+                renderTedAudioPlayer(null);
+                return;
+            }
+            emptyEl.classList.add("hidden");
+            contentEl.classList.remove("hidden");
+
+            writeInput.value = tedDraftText; // 이어서 학습하기 — 이 위치에서 쓰다 만 텍스트가 있으면 복원
+            prevBtn.classList.toggle("invisible", isWholeTedMode());
+            nextBtn.classList.toggle("invisible", isWholeTedMode());
+
+            const pool = getTedSentences();
+            if(!talk || pool.length === 0) {
+                document.getElementById("ted-progress-text").textContent = "0 / 0";
+                document.getElementById("ted-main-text").textContent = "이 토크에는 아직 문장이 없어요";
+                document.getElementById("ted-status-text").textContent = "설정 탭에서 대본을 확인해주세요";
+                micBtn.disabled = true; micBtn.classList.add("opacity-40");
+                listenBtn.disabled = true; listenBtn.classList.add("opacity-40");
+                writeInput.disabled = true;
+                writeSubmitBtn.disabled = true; writeSubmitBtn.classList.add("opacity-40");
+                renderTedAudioPlayer(null);
+                return;
+            }
+            micBtn.disabled = false; micBtn.classList.remove("opacity-40");
+            listenBtn.disabled = false; listenBtn.classList.remove("opacity-40");
+            writeInput.disabled = false;
+            writeSubmitBtn.disabled = false; writeSubmitBtn.classList.remove("opacity-40");
+
+            if(tedSentenceIndex >= pool.length) tedSentenceIndex = 0;
+            const target = getCurrentTedTarget();
+            document.getElementById("ted-progress-text").textContent = isWholeTedMode() ? "전체" : `${tedSentenceIndex + 1} / ${pool.length}`;
+            document.getElementById("ted-main-text").textContent = target.en;
+            document.getElementById("ted-status-text").textContent = "위 플레이어로 실제 음성을 들으며 따라 말하거나, 아래에 직접 입력해서 연습해보세요";
+            renderTedAudioPlayer(talk);
+            updateTedListenButtonUI();
+        }
+
+        function moveTedSentence(delta) {
+            if(tedMode !== 'sentence') return;
+            stopTedRecognition();
+            stopTedSynthesis();
+            const pool = getTedSentences();
+            if(pool.length === 0) return;
+            tedSentenceIndex = (tedSentenceIndex + delta + pool.length) % pool.length;
+            tedDraftText = "";
+            saveTedProgress();
+            renderTedStep();
+        }
+        document.getElementById("ted-prev-btn").addEventListener("click", () => moveTedSentence(-1));
+        document.getElementById("ted-next-btn").addEventListener("click", () => moveTedSentence(1));
 
         // 직접 입력해서 연습 — 마이크로 말하는 대신 타이핑한 영어를 목표 문장(현재 문장별/
         // 에피소드 전체 모드 기준)과 채점함 (음성 인식 결과와 동일한 채점/결과 화면 로직을
@@ -2744,6 +3146,185 @@
             saveSpeakProgress();
             document.getElementById("speak-result-area").classList.add("hidden");
             document.getElementById("speak-ko-sentence").scrollIntoView({ block: "center", behavior: "smooth" });
+        });
+
+        document.getElementById("ted-write-submit-btn").addEventListener("click", async () => {
+            const target = getCurrentTedTarget();
+            if(!target) return;
+            const typed = document.getElementById("ted-write-input").value.trim();
+            if(!typed) {
+                await showAlert("영어로 들은 내용을 입력해주세요.");
+                return;
+            }
+            stopTedRecognition();
+            stopTedSynthesis();
+            handleTedResult(typed, 'typed');
+        });
+
+        let tedDraftSaveTimer = null;
+        function flushTedDraftSave() {
+            if(!tedDraftSaveTimer) return;
+            clearTimeout(tedDraftSaveTimer);
+            tedDraftSaveTimer = null;
+            saveTedProgress();
+        }
+        document.getElementById("ted-write-input").addEventListener("input", (e) => {
+            tedDraftText = e.target.value;
+            clearTimeout(tedDraftSaveTimer);
+            tedDraftSaveTimer = setTimeout(flushTedDraftSave, 400);
+        });
+
+        // 정확한 발음으로 듣기(합성음) — 실제 TED 오디오는 문장 단위로 끊어 재생할 수 없어서,
+        // 문장/단어 단위의 정확한 발음 확인은 기존 탭들과 동일하게 TTS로 보완함
+        let isTedTTSPlaying = false;
+
+        function updateTedListenButtonUI() {
+            const listenBtn = document.getElementById("ted-listen-btn");
+            if(!listenBtn) return;
+            if(isTedTTSPlaying) {
+                listenBtn.innerHTML = '<i class="fa-solid fa-stop"></i> 정지';
+                listenBtn.classList.remove("bg-cardGray", "text-textDark");
+                listenBtn.classList.add("bg-red-50", "text-red-500", "border-red-200");
+            } else {
+                listenBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i> 정확한 발음으로 듣기 (합성음)';
+                listenBtn.classList.remove("bg-red-50", "text-red-500", "border-red-200");
+                listenBtn.classList.add("bg-cardGray", "text-textDark");
+            }
+            renderIcons(listenBtn);
+        }
+
+        function stopTedSynthesis() {
+            if('speechSynthesis' in window) window.speechSynthesis.cancel();
+            isTedTTSPlaying = false;
+            updateTedListenButtonUI();
+        }
+
+        function tedSpeakEnglishText(text) {
+            if(!('speechSynthesis' in window) || !text) return;
+            stopTedRecognition();
+            stopTedAudio();
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'en-US';
+            utter.rate = 0.95;
+            utter.onstart = () => { isTedTTSPlaying = true; updateTedListenButtonUI(); };
+            utter.onend = () => { isTedTTSPlaying = false; updateTedListenButtonUI(); };
+            utter.onerror = () => { isTedTTSPlaying = false; updateTedListenButtonUI(); };
+            window.speechSynthesis.speak(utter);
+        }
+
+        document.getElementById("ted-listen-btn").addEventListener("click", async () => {
+            if(isTedTTSPlaying) { stopTedSynthesis(); return; }
+            if(!('speechSynthesis' in window)) {
+                await showAlert("이 브라우저는 음성 합성(듣기 기능)을 지원하지 않아요.");
+                return;
+            }
+            const target = getCurrentTedTarget();
+            if(!target) return;
+            tedSpeakEnglishText(target.en);
+        });
+
+        function tedScoreMessage(percent) {
+            if(percent >= 90) return "완벽해요! 🎉";
+            if(percent >= 70) return "거의 다 왔어요!";
+            if(percent >= 50) return "조금 더 연습해봐요";
+            return "다시 도전해봐요!";
+        }
+
+        function handleTedResult(transcript, source) {
+            source = source || 'voice';
+            const target = getCurrentTedTarget();
+            if(!target) return;
+            const { targetDisplay, matched, percent, saidDisplay, matchedSaid } = scoreSpeaking(target.en, transcript);
+
+            document.getElementById("ted-status-text").textContent = source === 'typed'
+                ? "채점이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 합성음으로 들을 수 있어요)"
+                : "인식이 완료됐어요. 결과를 확인해보세요. (문장을 탭하면 합성음으로 다시 들을 수 있어요)";
+            document.getElementById("ted-result-label").innerHTML = (source === 'typed' ? "내가 입력한 내용" : "내가 말한 내용") + ' <span class="font-normal">(원문에 없는 단어는 노란 취소선)</span>';
+            const recognizedHtml = saidDisplay.map((w, idx) =>
+                matchedSaid[idx] ? escapeHtml(w) : `<span class="speak-word-extra">${escapeHtml(w)}</span>`
+            ).join(' ');
+            document.getElementById("ted-recognized-text").innerHTML = `"${recognizedHtml}"`;
+
+            const resultEl = document.getElementById("ted-result-text");
+            resultEl.innerHTML = "";
+            const groups = getTargetTedSentenceGroups();
+            let cursor = 0;
+            groups.forEach((sentence) => {
+                const wordCount = tokenizeWithDisplay(sentence.en).display.length;
+                const wordSpans = [];
+                for(let i = 0; i < wordCount && cursor < targetDisplay.length; i++, cursor++) {
+                    const cls = matched[cursor] ? 'speak-word-correct' : 'speak-word-wrong';
+                    wordSpans.push(`<span class="${cls}">${escapeHtml(targetDisplay[cursor])}</span>`);
+                }
+                const sentenceSpan = document.createElement('span');
+                sentenceSpan.className = 'speak-sentence-clickable';
+                sentenceSpan.innerHTML = wordSpans.join(' ') + ' ';
+                sentenceSpan.title = '탭하면 이 문장을 합성음으로 다시 들어요';
+                sentenceSpan.addEventListener('click', () => tedSpeakEnglishText(sentence.en));
+                resultEl.appendChild(sentenceSpan);
+            });
+            if(groups.length === 0) resultEl.textContent = target.en;
+
+            renderTedWrongWords(targetDisplay, matched);
+            renderTedVocab();
+
+            const scoreLabel = source === 'typed' ? '타이핑 정확도' : '스피킹 정확도';
+            document.getElementById("ted-score-badge").textContent = `${scoreLabel} ${percent}점 · ${tedScoreMessage(percent)}`;
+            document.getElementById("ted-result-area").classList.remove("hidden");
+        }
+
+        function renderTedWrongWords(targetDisplay, matched) {
+            const wrap = document.getElementById("ted-wrong-words-wrap");
+            const container = document.getElementById("ted-wrong-words");
+            container.innerHTML = "";
+            const seen = new Set();
+            const wrongWords = [];
+            targetDisplay.forEach((w, idx) => {
+                if(matched[idx]) return;
+                const cleanWord = w.replace(/^[^a-zA-Z0-9']+|[^a-zA-Z0-9']+$/g, '');
+                const key = cleanWord.toLowerCase();
+                if(!cleanWord || seen.has(key)) return;
+                seen.add(key);
+                wrongWords.push(cleanWord);
+            });
+            if(wrongWords.length === 0) {
+                wrap.classList.add("hidden");
+                return;
+            }
+            wrap.classList.remove("hidden");
+            wrongWords.forEach(word => {
+                const btn = document.createElement("button");
+                btn.className = "bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full border border-red-200 active:scale-95 transition-transform";
+                btn.textContent = word;
+                btn.addEventListener("click", () => tedSpeakEnglishText(word));
+                container.appendChild(btn);
+            });
+        }
+
+        function renderTedVocab() {
+            const wrap = document.getElementById("ted-vocab-wrap");
+            const talk = getActiveTedTalk();
+            const vocab = talk ? talk.vocab : [];
+            if(!vocab || vocab.length === 0) {
+                wrap.classList.add("hidden");
+                return;
+            }
+            wrap.classList.remove("hidden");
+            document.getElementById("ted-vocab").innerHTML = vocab.map(vItem => {
+                const parts = vItem.split(":");
+                return `<span class="inline-block bg-white px-2.5 py-1 rounded border border-divider mr-1.5 mb-1.5 shadow-sm"><strong class="text-textDark">${escapeHtml(parts[0])}</strong> <span class="text-primary">${escapeHtml(parts.slice(1).join(':') || '')}</span></span>`;
+            }).join('');
+        }
+
+        document.getElementById("ted-retry-btn").addEventListener("click", () => {
+            stopTedRecognition();
+            stopTedSynthesis();
+            document.getElementById("ted-write-input").value = "";
+            tedDraftText = "";
+            saveTedProgress();
+            document.getElementById("ted-result-area").classList.add("hidden");
+            document.getElementById("ted-main-text").scrollIntoView({ block: "center", behavior: "smooth" });
         });
 
         document.getElementById("lyrics-retry-btn").addEventListener("click", () => {
@@ -2965,6 +3546,28 @@
             const activePanel = document.querySelector('.panel.active');
             if(activePanel && activePanel.id === 'panel-lyrics') initLyricsTab();
             if(activePanel && activePanel.id === 'panel-library') renderLyricsManageList();
+        }
+
+        function populateTedTalkSelectors() {
+            document.querySelectorAll('.ted-talk-select').forEach(sel => {
+                sel.innerHTML = tedTalks.map(t => `<option value="${t.id}" ${t.id===activeTedTalkId?'selected':''}>${escapeHtml(t.title)} (${t.sentences.length}문장)</option>`).join('');
+            });
+        }
+
+        function changeTedTalk(id) {
+            if(!id || id === activeTedTalkId) return;
+            stopTedRecognition();
+            stopTedSynthesis();
+            activeTedTalkId = id;
+            saveActiveTedTalkId();
+            tedSentenceIndex = 0;
+            tedDraftText = "";
+            saveTedProgress();
+            populateTedTalkSelectors();
+
+            const activePanel = document.querySelector('.panel.active');
+            if(activePanel && activePanel.id === 'panel-speaking' && speakingView === 'ted') enterSpeakingTed();
+            if(activePanel && activePanel.id === 'panel-library') renderTedManageList();
         }
 
         function initLyricsTab() {
@@ -3393,6 +3996,7 @@
                 readingBooks, activeReadingBookId,
                 speakingDays, activeSpeakingDayId,
                 lyricsSongs, activeLyricsSongId,
+                tedTalks, activeTedTalkId,
                 stats, userGoals, bqStats, progress, speakStats, speakEpisodeStats,
                 masteredWords: [...masteredWordSet]
             };
@@ -3437,6 +4041,14 @@
                 lyricsDraftText = "";
                 saveLyricsProgress();
             }
+            if(data.tedTalks && Array.isArray(data.tedTalks)) {
+                tedTalks = data.tedTalks;
+                activeTedTalkId = data.activeTedTalkId && tedTalks.find(t => t.id === data.activeTedTalkId)
+                    ? data.activeTedTalkId : (tedTalks[0] ? tedTalks[0].id : null);
+                tedSentenceIndex = 0;
+                tedDraftText = "";
+                saveTedProgress();
+            }
             if(data.stats) stats = data.stats;
             if(data.userGoals) userGoals = data.userGoals;
             if(data.bqStats) bqStats = data.bqStats;
@@ -3449,6 +4061,7 @@
             saveReadingBooks(); saveActiveReadingBookId();
             saveSpeakingDays(); saveActiveSpeakingDayId();
             saveLyricsSongs(); saveActiveLyricsSongId();
+            saveTedTalks(); saveActiveTedTalkId();
             saveStats(stats); saveGoals(userGoals); saveBQStats(bqStats); saveProgress(progress); saveMasteredWordSet(); saveSpeakStats(); saveSpeakEpisodeStats();
 
             words = getActiveWordBook().words;
@@ -3460,10 +4073,12 @@
             populateReadingBookSelectors();
             populateSpeakingDaySelectors();
             populateLyricsSongSelectors();
+            populateTedTalkSelectors();
             renderWordList();
             renderSpeakingManageList();
             renderOutputManageList();
             renderLyricsManageList();
+            renderTedManageList();
             renderDashboard();
             updateQuizScoreDisplay();
             updateBQScore();
@@ -4711,6 +5326,105 @@
         });
 
         // ==================================================================
+        // TED 섀도잉 음성 인식 — Input/Output과 동일한 구조(연속 인식 + 일시적 오류는
+        // 즉시 재시작, 치명적 오류만 종료)
+        // ==================================================================
+        const TedRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let tedRecognition = null;
+        let isTedRecording = false;
+        let tedLastTranscript = '';
+        let tedAccumulatedTranscript = '';
+        let tedStopRequested = false;
+        let tedFatalErrorMsg = null;
+
+        function stopTedRecognition() {
+            if(tedRecognition && isTedRecording) {
+                tedStopRequested = true;
+                try { tedRecognition.stop(); } catch(err) {}
+            }
+            isTedRecording = false;
+            const micBtn = document.getElementById("ted-mic-btn");
+            if(micBtn) micBtn.classList.remove("recording");
+        }
+
+        function finishTedRecognition() {
+            isTedRecording = false;
+            document.getElementById("ted-mic-btn").classList.remove("recording");
+            if(tedFatalErrorMsg) {
+                document.getElementById("ted-status-text").textContent = tedFatalErrorMsg;
+            } else if(tedLastTranscript) {
+                handleTedResult(tedLastTranscript);
+            }
+            tedLastTranscript = '';
+            tedAccumulatedTranscript = '';
+            tedStopRequested = false;
+            tedFatalErrorMsg = null;
+        }
+
+        document.getElementById("ted-mic-btn").addEventListener("click", async () => {
+            if(!getCurrentTedTarget()) return;
+
+            if(!TedRecognitionCtor) {
+                await showAlert("이 브라우저는 음성 인식을 지원하지 않아요. 안드로이드/PC의 Chrome 브라우저에서 이용해주세요.");
+                return;
+            }
+            if(isTedRecording) { stopTedRecognition(); return; }
+            stopTedSynthesis();
+            stopTedAudio(); // 실제 TED 음성이 마이크에 섞여 들어가 채점을 방해하지 않도록, 녹음 시작 시 재생 중지
+
+            if(!tedRecognition) {
+                tedRecognition = new TedRecognitionCtor();
+                tedRecognition.lang = 'en-US';
+                tedRecognition.interimResults = false;
+                tedRecognition.maxAlternatives = 1;
+                tedRecognition.onresult = (e) => {
+                    let transcript = '';
+                    for(let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript + ' ';
+                    tedLastTranscript = (tedAccumulatedTranscript + ' ' + transcript).trim();
+                };
+                tedRecognition.onerror = (e) => {
+                    if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                        tedFatalErrorMsg = "마이크 권한을 허용해야 사용할 수 있어요.";
+                    } else if(e.error !== 'no-speech' && e.error !== 'aborted') {
+                        tedFatalErrorMsg = "음성 인식 중 오류가 발생했어요. 다시 시도해주세요.";
+                    }
+                };
+                tedRecognition.onend = () => {
+                    if(!tedStopRequested && !tedFatalErrorMsg) {
+                        tedAccumulatedTranscript = tedLastTranscript;
+                        try {
+                            tedRecognition.start();
+                        } catch(err) {
+                            setTimeout(() => {
+                                if(tedStopRequested) return;
+                                try { tedRecognition.start(); } catch(err2) { finishTedRecognition(); }
+                            }, 80);
+                        }
+                        return;
+                    }
+                    finishTedRecognition();
+                };
+            }
+
+            tedRecognition.continuous = true;
+            tedLastTranscript = '';
+            tedAccumulatedTranscript = '';
+            tedStopRequested = false;
+            tedFatalErrorMsg = null;
+            document.getElementById("ted-result-area").classList.add("hidden");
+            document.getElementById("ted-status-text").textContent = "듣고 있어요... 🎤 (다 말하면 마이크를 다시 눌러 종료)";
+            isTedRecording = true;
+            document.getElementById("ted-mic-btn").classList.add("recording");
+            try {
+                tedRecognition.start();
+            } catch(err) {
+                isTedRecording = false;
+                document.getElementById("ted-mic-btn").classList.remove("recording");
+                document.getElementById("ted-status-text").textContent = "마이크를 시작하지 못했어요. 다시 시도해주세요.";
+            }
+        });
+
+        // ==================================================================
         // 가사 관리 — 곡 추가/이름변경/삭제, 선택된 곡의 가사 줄 목록(줄 단위 삭제 가능)
         // ==================================================================
         function renderLyricsManageList() {
@@ -4888,6 +5602,195 @@
         });
         document.getElementById("download-lyrics-json-btn").addEventListener("click", () => downloadTemplate('lyrics-json'));
 
+        // ==================================================================
+        // TED 섀도잉 자료 관리 — 토크 추가/수정/이름변경/삭제, 가져오기
+        // ==================================================================
+        function renderTedManageList() {
+            const container = document.getElementById("ted-manage-list");
+            if(!container) return;
+            const countEl = document.getElementById("ted-list-count");
+            if(countEl) countEl.textContent = tedTalks.length;
+            if(tedTalks.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-textMuted text-xs">등록된 토크가 없습니다. "토크 추가"로 새 토크를 등록해보세요.</div>`;
+                return;
+            }
+            container.innerHTML = "";
+            tedTalks.forEach((talk) => {
+                const item = document.createElement("div");
+                item.className = "flex justify-between items-start gap-2 bg-cardGray border border-divider rounded-lg p-2.5";
+                item.innerHTML = `
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-textDark break-words">${escapeHtml(talk.title)}${talk.speaker ? ` <span class="font-normal text-textMuted">· ${escapeHtml(talk.speaker)}</span>` : ''}</div>
+                        <div class="text-[11px] text-textMuted mt-0.5">문장 ${talk.sentences.length}개${talk.vocab.length > 0 ? ` · 핵심표현 ${talk.vocab.length}개` : ''}${!talk.audioUrl ? ' · ⚠️ 오디오 링크 없음' : ''}${talk.mismatched ? ' · ⚠️ 한글/영어 문장 수 불일치' : ''}</div>
+                    </div>
+                    <button class="text-textMuted hover:text-red-500 p-1 text-sm shrink-0 delete-ted-talk-item-btn"><i class="fa-solid fa-trash-can"></i></button>
+                `;
+                item.querySelector(".delete-ted-talk-item-btn").addEventListener("click", async () => {
+                    if(!(await showConfirm(`'${talk.title}'을(를) 삭제할까요?`))) return;
+                    tedTalks = tedTalks.filter(t => t.id !== talk.id);
+                    if(activeTedTalkId === talk.id) activeTedTalkId = tedTalks[0] ? tedTalks[0].id : null;
+                    saveTedTalks();
+                    saveActiveTedTalkId();
+                    tedSentenceIndex = 0;
+                    tedDraftText = "";
+                    saveTedProgress();
+                    populateTedTalkSelectors();
+                    renderTedManageList();
+                });
+                container.appendChild(item);
+            });
+        }
+
+        document.getElementById("add-ted-talk-btn").addEventListener("click", () => {
+            editingTedTalkId = null;
+            document.getElementById("ted-modal-title").textContent = "새 TED 토크 추가하기";
+            document.getElementById("new-ted-title-input").value = "";
+            document.getElementById("new-ted-audio-input").value = "";
+            document.getElementById("new-ted-en-input").value = "";
+            document.getElementById("new-ted-ko-input").value = "";
+            document.getElementById("new-ted-vocab-input").value = "";
+            document.getElementById("add-ted-modal").style.display = "flex";
+        });
+        document.getElementById("close-ted-modal-btn").addEventListener("click", () => {
+            document.getElementById("add-ted-modal").style.display = "none";
+        });
+        // 이미 등록된 토크의 내용을 통째로 다시 입력(교체) — 오디오 링크를 나중에 추가하거나
+        // 번역을 보완하고 싶을 때, 기존 값을 채운 채로 모달을 열어 수정할 수 있게 함
+        document.getElementById("edit-ted-talk-btn").addEventListener("click", async () => {
+            const talk = getActiveTedTalk();
+            if(!talk) { await showAlert("수정할 토크가 없습니다."); return; }
+            editingTedTalkId = talk.id;
+            document.getElementById("ted-modal-title").textContent = "TED 토크 내용 수정하기";
+            document.getElementById("new-ted-title-input").value = talk.title;
+            document.getElementById("new-ted-audio-input").value = talk.audioUrl;
+            document.getElementById("new-ted-en-input").value = talk.sentences.map(s => s.en).join(' ');
+            document.getElementById("new-ted-ko-input").value = talk.sentences.map(s => s.ko).filter(Boolean).join(' ');
+            document.getElementById("new-ted-vocab-input").value = talk.vocab.join('\n');
+            document.getElementById("add-ted-modal").style.display = "flex";
+        });
+        document.getElementById("save-new-ted-btn").addEventListener("click", async () => {
+            const titleVal = document.getElementById("new-ted-title-input").value.trim();
+            const audioVal = document.getElementById("new-ted-audio-input").value.trim();
+            const enVal = document.getElementById("new-ted-en-input").value;
+            const koVal = document.getElementById("new-ted-ko-input").value;
+            const vocabVal = document.getElementById("new-ted-vocab-input").value.split('\n').map(v => v.trim()).filter(Boolean);
+            if(!titleVal) {
+                await showAlert("토크 제목을 입력해주세요.");
+                return;
+            }
+            const built = buildTedTalk(titleVal, "", audioVal, enVal, koVal, vocabVal);
+            if(built.sentences.length === 0) {
+                await showAlert("영어 대본을 한 문장 이상 입력해주세요. (마침표/느낌표/물음표로 끝나야 문장으로 인식돼요)");
+                return;
+            }
+            if(editingTedTalkId) {
+                const target = tedTalks.find(t => t.id === editingTedTalkId);
+                if(target) {
+                    target.title = built.title;
+                    target.audioUrl = built.audioUrl;
+                    target.sentences = built.sentences;
+                    target.vocab = built.vocab;
+                    target.mismatched = built.mismatched;
+                    activeTedTalkId = target.id;
+                }
+            } else {
+                tedTalks.push(built);
+                activeTedTalkId = built.id;
+            }
+            saveTedTalks();
+            saveActiveTedTalkId();
+            tedSentenceIndex = 0;
+            tedDraftText = "";
+            saveTedProgress();
+            document.getElementById("add-ted-modal").style.display = "none";
+            populateTedTalkSelectors();
+            renderTedManageList();
+            if(built.mismatched) {
+                await showAlert("한글/영어 문장 수가 서로 달라서, 일부 문장은 한글 번역 없이 영어만 표시돼요.");
+            }
+        });
+
+        document.getElementById("rename-ted-talk-btn").addEventListener("click", async () => {
+            const talk = getActiveTedTalk();
+            if(!talk) { await showAlert("이름을 변경할 토크가 없습니다."); return; }
+            const name = await showPrompt("토크 제목을 입력하세요:", talk.title);
+            if(!name || !name.trim()) return;
+            talk.title = name.trim();
+            saveTedTalks();
+            populateTedTalkSelectors();
+            renderTedManageList();
+        });
+
+        document.getElementById("delete-ted-talk-btn").addEventListener("click", async () => {
+            const talk = getActiveTedTalk();
+            if(!talk) { await showAlert("삭제할 토크가 없습니다."); return; }
+            if(!(await showConfirm(`'${talk.title}'을(를) 삭제할까요?`))) return;
+            tedTalks = tedTalks.filter(t => t.id !== talk.id);
+            activeTedTalkId = tedTalks[0] ? tedTalks[0].id : null;
+            saveTedTalks();
+            saveActiveTedTalkId();
+            tedSentenceIndex = 0;
+            tedDraftText = "";
+            saveTedProgress();
+            populateTedTalkSelectors();
+            renderTedManageList();
+        });
+
+        // title/speaker/audioUrl/en/ko/vocab 키를 가진 JSON 배열 텍스트를 파싱해 각 항목을
+        // 하나의 토크로 만듦 (en/ko는 마침표 기준으로 문장 분리, 같은 순서로 짝지어짐)
+        function parseTedFile(text) {
+            const data = JSON.parse(text.replace(/^﻿/, ''));
+            if(!Array.isArray(data)) throw new Error("JSON 배열([]) 형식이어야 합니다.");
+            return data.map((item) => {
+                const title = String(item.title ?? item['제목'] ?? '제목 없는 토크').trim();
+                const speaker = String(item.speaker ?? item['연사'] ?? '').trim();
+                const audioUrl = String(item.audioUrl ?? item['오디오'] ?? '').trim();
+                const en = String(item.en ?? item['영어'] ?? '').trim();
+                const ko = String(item.ko ?? item['한글'] ?? '').trim();
+                const vocab = Array.isArray(item.vocab) ? item.vocab : [];
+                return buildTedTalk(title, speaker, audioUrl, en, ko, vocab);
+            }).filter(talk => talk.sentences.length > 0);
+        }
+
+        document.getElementById("import-ted-btn").addEventListener("click", () => {
+            document.getElementById("ted-file-input").click();
+        });
+        document.getElementById("ted-file-input").addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const parsed = parseTedFile(ev.target.result);
+                    if(parsed.length === 0) { await showAlert("가져올 토크를 찾지 못했습니다. 파일 형식을 확인해주세요."); return; }
+                    tedTalks.push(...parsed);
+                    activeTedTalkId = parsed[0].id;
+                    saveTedTalks();
+                    saveActiveTedTalkId();
+                    tedSentenceIndex = 0;
+                    tedDraftText = "";
+                    saveTedProgress();
+                    populateTedTalkSelectors();
+                    renderTedManageList();
+                    await showAlert(`토크 ${parsed.length}개를 추가했습니다.`);
+                } catch(err) {
+                    await showAlert("파일을 읽는 중 오류가 발생했습니다: " + err.message);
+                }
+                e.target.value = "";
+            };
+            reader.readAsText(file, 'utf-8');
+        });
+        document.getElementById("download-ted-json-btn").addEventListener("click", () => downloadTemplate('ted-json'));
+
+        // TED 자료 관리의 토크 목록 접음/펼침 토글
+        document.getElementById("toggle-ted-list-section").addEventListener("click", () => {
+            isTedListOpen = !isTedListOpen;
+            const wrap = document.getElementById("ted-manage-list-wrap");
+            const icon = document.getElementById("ted-list-toggle-icon");
+            wrap.style.display = isTedListOpen ? "block" : "none";
+            icon.style.transform = isTedListOpen ? "rotate(0deg)" : "rotate(-180deg)";
+        });
+
         // 대량 업로드용 예시 템플릿 다운로드
         function downloadTemplate(type) {
             let content, filename, mime;
@@ -4943,6 +5846,18 @@
                     }
                 ], null, 2);
                 filename = "가사_템플릿.json"; mime = "application/json;charset=utf-8";
+            } else if(type === 'ted-json') {
+                content = JSON.stringify([
+                    {
+                        title: "토크 제목 - 연사 이름",
+                        speaker: "연사 이름",
+                        audioUrl: "https://download.ted.com/talks/....mp3",
+                        en: "English transcript sentence one. English transcript sentence two.",
+                        ko: "한글 번역 문장 1. 한글 번역 문장 2.",
+                        vocab: ["breakthrough:돌파구", "groundbreaking:획기적인"]
+                    }
+                ], null, 2);
+                filename = "TED_섀도잉_템플릿.json"; mime = "application/json;charset=utf-8";
             } else { return; }
 
             const blob = new Blob(["\uFEFF" + content], { type: mime });
