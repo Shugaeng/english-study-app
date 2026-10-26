@@ -605,7 +605,7 @@
                     <!-- 말하기 문장 관리 -->
                     <div class="bg-white rounded-2xl border border-divider p-5 shadow-card mb-6">
                         <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-microphone text-primary"></i> 말하기 문장 관리 (Day1~40)</h2>
+                            <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-microphone text-primary"></i> 말하기 문장 관리 (Day1~30)</h2>
                         </div>
                         <p class="text-[11px] text-textMuted mb-3">한 Day 안에는 여러 개의 <strong>에피소드</strong>(문단)가 있고, 에피소드는 마침표 기준으로 자동으로 여러 문장으로 나뉘어 한 문장씩 말하기 연습을 할 수 있어요.</p>
                         <select class="speaking-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeSpeakingDay(this.value)"></select>
@@ -625,7 +625,7 @@
                     <!-- 말하기 OUTPUT 자료 관리 -->
                     <div class="bg-white rounded-2xl border border-divider p-5 shadow-card mb-6">
                         <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-book-open-reader text-primary"></i> 말하기 OUTPUT 자료 관리 (Day1~40)</h2>
+                            <h2 class="text-sm font-bold text-textDark flex items-center gap-2"><i class="fa-solid fa-book-open-reader text-primary"></i> 말하기 OUTPUT 자료 관리 (Day1~30)</h2>
                         </div>
                         <p class="text-[11px] text-textMuted mb-3">OUTPUT 블록 하나가 교재의 STEP1~4를 그대로 따라가는 연습 단위예요(우리말 보면서 듣기 → 한 문장씩 끊어 말하기 → 들으면서 따라 말하기 → 문단 통째로 말하기). 문단은 마침표 기준으로 자동으로 문장 단위로도 나뉩니다.</p>
                         <select class="output-day-select book-select w-full bg-cardGray border border-divider rounded-xl px-3.5 py-2.5 text-sm font-bold text-textDark mb-3" onchange="changeSpeakingDay(this.value)"></select>
@@ -1078,7 +1078,7 @@
         window.addEventListener("pagehide", () => { flushCloudPush(); flushSpeakDraftSave(); flushOutputDraftSave(); });
 
         const MASTER_LEVEL = 3; // 이 레벨에 도달하면 '암기 완료'로 간주 (마스터 단어 / 퀴즈 제외 기준)
-        const APP_VERSION = "v1.32.1"; // 현황 탭 하단에 표시되는 앱 버전
+        const APP_VERSION = "v1.33.0"; // 현황 탭 하단에 표시되는 앱 버전
 
         const DEFAULT_WORDS = [
             { id: "1", word: "regard", meaning: "~를 ~로 여기다, 존경", box: 5 },
@@ -1096,7 +1096,7 @@
             {"id":"p3","p":"It is well known that any exercise, like running or playing basketball, is great for your body and can even help improve your mood. But scientists have recently learned that for a period of time after you've exercised, your body produces a chemical that makes your brain more effective in learning. Exercise can create a stronger, faster brain. So if you're stuck on a homework problem, ____________________, then try the problem again. You just might discover that you're able to solve it.","a":5,"t":"달리기나 농구 같은 운동이 신체에 도움이 되고 기분을 향상시킨다는 사실은 잘 알려져 있다. 최근 과학자들은 운동 후 몸이 두뇌의 학습을 더 효과적으로 만들어주는 화학물질을 분비한다는 것을 알아냈다. 운동은 강하고 빠른 두뇌를 만든다. 숙제를 하다 막히면 밖으로 나가 축구를 하고 와서 다시 풀어보아라. 문제를 해결할 수 있다는 것을 알게 될 수도 있다.","v":["exercise:운동하다","period:기간","chemical:화학물질"],"c":["take a short sleep for a while","look up other reference books","talk to your teachers or parents","spend more time on that subject","go out and play a game of soccer"]}
         ];
 
-        // Day1 예시 에피소드 6개 (나머지 Day2~40은 빈 상태로 시작 — 설정 탭에서 에피소드를 추가/가져오기)
+        // Day1 예시 에피소드 6개 (나머지 Day2~30은 빈 상태로 시작 — 설정 탭에서 에피소드를 추가/가져오기)
         // 각 항목의 ko/en은 "전체 문단" 텍스트이며, 로딩 시 마침표 기준으로 자동으로 여러 문장으로 나뉨
         const DEFAULT_SPEAKING_EPISODES = [
             { title: "[1] 후회 제로 러닝",
@@ -1316,11 +1316,11 @@
         function saveReadingBooks() { localStorage.setItem(STORAGE_KEY_READINGBOOKS, JSON.stringify(readingBooks)); }
         function saveActiveReadingBookId() { localStorage.setItem(STORAGE_KEY_ACTIVE_READINGBOOK, activeReadingBookId); }
 
-        // 말하기(Day1~40) 데이터 — Day는 사용자가 추가/삭제할 수 없는 고정 40개 슬롯이며,
+        // 말하기(Day1~30) 데이터 — Day는 사용자가 추가/삭제할 수 없는 고정 30개 슬롯이며,
         // 각 Day 안에는 여러 개의 에피소드(문단)가 있고, 에피소드는 문장 단위로 나뉘어 있음
         // 각 슬롯 안의 에피소드만 설정 탭에서 추가/가져오기/삭제할 수 있음
         function buildDefaultSpeakingDays() {
-            return Array.from({ length: 40 }, (_, i) => ({
+            return Array.from({ length: 30 }, (_, i) => ({
                 id: `day${i + 1}`,
                 name: `Day ${i + 1}`,
                 episodes: (i === 0) ? DEFAULT_SPEAKING_EPISODES.map(e => buildSpeakingEpisode(e.title, e.ko, e.en, e.vocab)) : [],
@@ -1350,7 +1350,13 @@
         }
 
         let speakingDays = JSON.parse(localStorage.getItem(STORAGE_KEY_SPEAKING_DAYS));
-        if(!speakingDays || !Array.isArray(speakingDays) || speakingDays.length !== 40) {
+        let speakingDaysTrimmedFrom40 = false;
+        if(speakingDays && Array.isArray(speakingDays) && speakingDays.length === 40) {
+            // 교재가 Day30까지만 있어 예전 고정 40개 슬롯 중 빈 Day31~40을 제거
+            speakingDays = speakingDays.slice(0, 30);
+            speakingDaysTrimmedFrom40 = true;
+        }
+        if(!speakingDays || !Array.isArray(speakingDays) || speakingDays.length !== 30) {
             speakingDays = buildDefaultSpeakingDays();
         } else {
             migrateSpeakingDaysToEpisodes(speakingDays);
@@ -1362,6 +1368,7 @@
         function getActiveSpeakingDay() { return speakingDays.find(d => d.id === activeSpeakingDayId) || speakingDays[0]; }
         function saveSpeakingDays() { localStorage.setItem(STORAGE_KEY_SPEAKING_DAYS, JSON.stringify(speakingDays)); }
         function saveActiveSpeakingDayId() { localStorage.setItem(STORAGE_KEY_ACTIVE_SPEAKING_DAY, activeSpeakingDayId); }
+        if(speakingDaysTrimmedFrom40) { saveSpeakingDays(); saveActiveSpeakingDayId(); }
         function getSpeakingDaySentenceCount(day) { return day.episodes.reduce((sum, e) => sum + e.sentences.length, 0); }
         function getOutputBlocks() {
             const day = getActiveSpeakingDay();
@@ -3413,8 +3420,9 @@
                 activeReadingBookId = data.activeReadingBookId && readingBooks.find(b => b.id === data.activeReadingBookId)
                     ? data.activeReadingBookId : readingBooks[0].id;
             }
-            if(data.speakingDays && Array.isArray(data.speakingDays) && data.speakingDays.length === 40) {
-                speakingDays = data.speakingDays;
+            if(data.speakingDays && Array.isArray(data.speakingDays) && (data.speakingDays.length === 30 || data.speakingDays.length === 40)) {
+                // 길이 40인 예전 백업(Day31~40 포함)은 Day30까지만 남기고 자름
+                speakingDays = data.speakingDays.length === 40 ? data.speakingDays.slice(0, 30) : data.speakingDays;
                 migrateSpeakingDaysToEpisodes(speakingDays); // 예전(평면 문장) 형식으로 백업된 경우 대비
                 ensureOutputBlocks(speakingDays); // 예전(outputBlocks 없던) 형식으로 백업된 경우 대비
                 activeSpeakingDayId = data.activeSpeakingDayId && speakingDays.find(d => d.id === data.activeSpeakingDayId)
@@ -3863,7 +3871,7 @@
         });
 
         // ==================================================================
-        // 말하기 문장 관리 (Day는 고정 40개 슬롯 — 안의 에피소드만 추가/가져오기/전체삭제)
+        // 말하기 문장 관리 (Day는 고정 30개 슬롯 — 안의 에피소드만 추가/가져오기/전체삭제)
         // ==================================================================
         function renderSpeakingManageList() {
             const container = document.getElementById("speaking-manage-list");
@@ -4024,7 +4032,7 @@
         });
 
         // ==================================================================
-        // 말하기 OUTPUT 자료 관리 — 블록 추가/이름변경/삭제 (Day는 고정 40개 슬롯,
+        // 말하기 OUTPUT 자료 관리 — 블록 추가/이름변경/삭제 (Day는 고정 30개 슬롯,
         // 안의 블록만 추가/가져오기/전체삭제). 에피소드와 달리 문장으로 나누지 않고
         // ko/en 문단을 그대로 저장함
         // ==================================================================
